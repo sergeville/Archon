@@ -167,30 +167,21 @@ class KnowledgeSummaryService:
     async def _get_document_counts_batch(self, source_ids: list[str]) -> dict[str, int]:
         """
         Get document counts for multiple sources in a single query.
-        
-        Args:
-            source_ids: List of source IDs
-            
-        Returns:
-            Dict mapping source_id to document count
         """
         try:
-            # Use a raw SQL query for efficient counting
-            # Group by source_id and count
-            counts = {}
-            
-            # For now, use individual queries but optimize later with raw SQL
-            for source_id in source_ids:
-                result = (
-                    self.supabase.from_("archon_crawled_pages")
-                    .select("id", count="exact", head=True)
-                    .eq("source_id", source_id)
-                    .execute()
-                )
-                counts[source_id] = result.count if hasattr(result, "count") else 0
-            
+            counts = {sid: 0 for sid in source_ids}
+            # Fetch all matching page source_ids in one query
+            result = (
+                self.supabase.from_("archon_crawled_pages")
+                .select("source_id")
+                .in_("source_id", source_ids)
+                .execute()
+            )
+            for item in result.data or []:
+                sid = item.get("source_id")
+                if sid in counts:
+                    counts[sid] += 1
             return counts
-            
         except Exception as e:
             safe_logfire_error(f"Failed to get document counts | error={str(e)}")
             return {sid: 0 for sid in source_ids}
@@ -198,28 +189,20 @@ class KnowledgeSummaryService:
     async def _get_code_example_counts_batch(self, source_ids: list[str]) -> dict[str, int]:
         """
         Get code example counts for multiple sources efficiently.
-        
-        Args:
-            source_ids: List of source IDs
-            
-        Returns:
-            Dict mapping source_id to code example count
         """
         try:
-            counts = {}
-            
-            # For now, use individual queries but can optimize with raw SQL later
-            for source_id in source_ids:
-                result = (
-                    self.supabase.from_("archon_code_examples")
-                    .select("id", count="exact", head=True)
-                    .eq("source_id", source_id)
-                    .execute()
-                )
-                counts[source_id] = result.count if hasattr(result, "count") else 0
-            
+            counts = {sid: 0 for sid in source_ids}
+            result = (
+                self.supabase.from_("archon_code_examples")
+                .select("source_id")
+                .in_("source_id", source_ids)
+                .execute()
+            )
+            for item in result.data or []:
+                sid = item.get("source_id")
+                if sid in counts:
+                    counts[sid] += 1
             return counts
-            
         except Exception as e:
             safe_logfire_error(f"Failed to get code example counts | error={str(e)}")
             return {sid: 0 for sid in source_ids}
@@ -227,15 +210,8 @@ class KnowledgeSummaryService:
     async def _get_first_urls_batch(self, source_ids: list[str]) -> dict[str, str]:
         """
         Get first URL for each source in a batch.
-        
-        Args:
-            source_ids: List of source IDs
-            
-        Returns:
-            Dict mapping source_id to first URL
         """
         try:
-            # Get all first URLs in one query
             result = (
                 self.supabase.from_("archon_crawled_pages")
                 .select("source_id, url")
@@ -244,20 +220,17 @@ class KnowledgeSummaryService:
                 .execute()
             )
             
-            # Group by source_id, keeping first URL for each
             urls = {}
             for item in result.data or []:
                 source_id = item["source_id"]
                 if source_id not in urls:
                     urls[source_id] = item["url"]
             
-            # Provide defaults for any missing
             for source_id in source_ids:
                 if source_id not in urls:
                     urls[source_id] = f"source://{source_id}"
             
             return urls
-            
         except Exception as e:
             safe_logfire_error(f"Failed to get first URLs | error={str(e)}")
             return {sid: f"source://{sid}" for sid in source_ids}

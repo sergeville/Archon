@@ -42,15 +42,26 @@ dotenv_path = project_root / ".env"
 load_dotenv(dotenv_path, override=True)
 
 # Configure logging FIRST before any imports that might use it
+# Check if we're in stdio mode - if so, only log to file, not stdout
+transport_mode = os.getenv("TRANSPORT", "streamable-http")
+log_level = getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper(), logging.INFO)
+
+handlers = []
+if transport_mode != "stdio":
+    # Only log to stdout if NOT in stdio mode (to avoid breaking MCP protocol)
+    handlers.append(logging.StreamHandler(sys.stdout))
+
+# Always try to log to file
+if os.path.exists("/tmp"):
+    handlers.append(logging.FileHandler("/tmp/mcp_server.log", mode="a"))
+
+if not handlers:
+    handlers.append(logging.NullHandler())
+
 logging.basicConfig(
-    level=logging.INFO,
+    level=log_level,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler("/tmp/mcp_server.log", mode="a")
-        if os.path.exists("/tmp")
-        else logging.NullHandler(),
-    ],
+    handlers=handlers,
 )
 logger = logging.getLogger(__name__)
 
@@ -603,14 +614,18 @@ def main():
         # Initialize Logfire first
         setup_logfire(service_name="archon-mcp-server")
 
+        # Get transport mode from environment variable (default: streamable-http)
+        transport = os.getenv("TRANSPORT", "streamable-http")
+
         logger.info("🚀 Starting Archon MCP Server")
-        logger.info("   Mode: Streamable HTTP")
-        logger.info(f"   URL: http://{server_host}:{server_port}/mcp")
+        logger.info(f"   Mode: {transport.upper()}")
+        if transport == "streamable-http":
+            logger.info(f"   URL: http://{server_host}:{server_port}/mcp")
 
         mcp_logger.info("🔥 Logfire initialized for MCP server")
-        mcp_logger.info(f"🌟 Starting MCP server - host={server_host}, port={server_port}")
+        mcp_logger.info(f"🌟 Starting MCP server - host={server_host}, port={server_port}, transport={transport}")
 
-        mcp.run(transport="streamable-http")
+        mcp.run(transport=transport)
 
     except Exception as e:
         mcp_logger.error(f"💥 Fatal error in main - error={str(e)}, error_type={type(e).__name__}")

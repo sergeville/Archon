@@ -70,9 +70,19 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
   // Sort and filter projects
   const sortedProjects = useMemo(() => {
     // Filter by search query
-    const filtered = (projects as Project[]).filter((project) =>
-      project.title.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
+    const filtered = (projects as Project[]).filter((project) => {
+      const query = searchQuery.trim();
+      if (!query) return true;
+
+      // Handle negation operator (!)
+      if (query.startsWith('!')) {
+        const term = query.substring(1).toLowerCase();
+        if (!term) return true; // Just '!' shows everything
+        return !project.title.toLowerCase().includes(term);
+      }
+
+      return project.title.toLowerCase().includes(query.toLowerCase());
+    });
 
     // Sort: pinned first, then alphabetically
     return filtered.sort((a, b) => {

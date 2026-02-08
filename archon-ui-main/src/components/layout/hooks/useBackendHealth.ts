@@ -13,7 +13,7 @@ export function useBackendHealth() {
     queryFn: ({ signal }) => {
       // Use existing ETag infrastructure with timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       // Chain signals: React Query's signal + our timeout
       if (signal) {

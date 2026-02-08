@@ -81,7 +81,7 @@ export async function callAPIWithETag<T = unknown>(endpoint: string, options: Re
     const response = await fetch(fullUrl, {
       ...options,
       headers,
-      signal: options.signal ?? AbortSignal.timeout(20000), // 20 second timeout (was 10s)
+      signal: options.signal ?? AbortSignal.timeout(60000), // 60 second timeout (was 10s)
     });
 
     // Handle errors
