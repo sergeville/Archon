@@ -21,6 +21,7 @@ services:
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - LOGFIRE_TOKEN=${LOGFIRE_TOKEN:-}
       - SERVICE_DISCOVERY_MODE=docker_compose
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
@@ -83,6 +84,8 @@ services:
     environment:
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - LOGFIRE_TOKEN=${LOGFIRE_TOKEN:-}
       - SERVICE_DISCOVERY_MODE=docker_compose
       - TRANSPORT=sse
@@ -232,6 +235,76 @@ services:
       - ./archon-ui-main/public:/app/public
     depends_on:
       archon-server:
+        condition: service_healthy
+
+  # LLM Streamer - Real-time log streaming dashboard
+  llm-streamer-redis:
+    image: redis:alpine
+    container_name: llm-streamer-redis
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  llm-streamer-gateway:
+    image: python:3.11-slim
+    container_name: llm-streamer-gateway
+    working_dir: /app
+    ports:
+      - "${LLM_STREAMER_PORT:-8000}:8000"
+    environment:
+      - REDIS_URL=redis://llm-streamer-redis:6379
+    networks:
+      - app-network
+    volumes:
+      - ./llm-streamer:/app
+    command: sh -c "pip install -q -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000"
+    depends_on:
+      llm-streamer-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  llm-streamer-producer:
+    image: python:3.11-slim
+    container_name: llm-streamer-producer
+    working_dir: /app
+    environment:
+      - REDIS_URL=redis://llm-streamer-redis:6379
+    networks:
+      - app-network
+    volumes:
+      - ./llm-streamer:/app
+    command: sh -c "pip install -q -r requirements.txt && python -u producer.py"
+    depends_on:
+      llm-streamer-redis:
+        condition: service_healthy
+
+  llm-streamer-collector:
+    image: python:3.11-slim
+    container_name: llm-streamer-collector
+    working_dir: /app
+    environment:
+      - REDIS_URL=redis://llm-streamer-redis:6379
+    networks:
+      - app-network
+    volumes:
+      - ./llm-streamer:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: sh -c "pip install -q -r requirements.txt && python -u archon_log_collector.py"
+    depends_on:
+      llm-streamer-redis:
+        condition: service_healthy
+      archon-server:
+        condition: service_healthy
+      archon-mcp:
         condition: service_healthy
 
 networks:
