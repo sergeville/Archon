@@ -502,6 +502,29 @@ docker system prune -f
 - **Backend**: Check that volumes are mounted correctly in `docker-compose.yml`
 - **File permissions**: On some systems, mounted volumes may have permission issues
 
+#### MCP Connection Issues
+
+If Claude Desktop (or other MCP clients) can't connect to Archon:
+
+1. **Verify correct port**: MCP server runs on port **8051**, not 3737 (web UI)
+2. **Check configuration**: Open `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - Should point to `http://localhost:8051/sse`
+   - NOT `http://localhost:3737/sse`
+3. **Verify MCP server health**:
+   ```bash
+   curl http://localhost:8051/health
+   # Should return: {"success":true,"health":{"status":"healthy"}}
+   ```
+4. **Check MCP server logs**:
+   ```bash
+   docker compose logs archon-mcp --tail 50
+   ```
+5. **Restart Claude Desktop**: Fully quit (Cmd+Q) and reopen
+
+**Detailed Guides**:
+- **Fix Connection**: See [`fix-archon-mcp-guide.md`](./fix-archon-mcp-guide.md) for step-by-step port configuration
+- **Full Validation**: See [`archon-mcp-validation-report.md`](./archon-mcp-validation-report.md) for comprehensive MCP setup validation
+
 ## 📈 Progress
 
 <p align="center">
