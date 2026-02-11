@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
-import { LayoutGrid, List, Plus, Search, X } from "lucide-react";
+import { LayoutGrid, List, ListTodo, Plus, Search, X } from "lucide-react";
 import type React from "react";
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "../../ui/primitives/button";
 import { Input } from "../../ui/primitives/input";
 import { cn } from "../../ui/primitives/styles";
@@ -110,6 +111,15 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
           </div>
         )}
         {rightContent}
+        <div className="p-1 bg-black/30 dark:bg-black/50 rounded-lg border border-white/10">
+          <Link
+            to="/todo"
+            className="inline-flex items-center justify-center px-3 py-1.5 rounded-md text-sm font-medium text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
+            aria-label="Global Todo"
+          >
+            <ListTodo className="w-4 h-4" aria-hidden="true" />
+          </Link>
+        </div>
         <Button onClick={onNewProject} variant="cyan" className="shadow-lg shadow-cyan-500/20">
           <Plus className="w-4 h-4 mr-2" />
           New Project
