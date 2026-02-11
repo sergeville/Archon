@@ -132,6 +132,20 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
     }
   }, [projects, refetchTaskCounts]);
 
+  // Update browser tab title when selected project changes
+  useEffect(() => {
+    if (selectedProject) {
+      document.title = `${selectedProject.title} - Archon`;
+    } else {
+      document.title = 'Projects - Archon';
+    }
+
+    // Cleanup: reset title when component unmounts
+    return () => {
+      document.title = 'Archon - Knowledge Engine';
+    };
+  }, [selectedProject]);
+
   // Handle pin toggle
   const handlePinProject = async (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
