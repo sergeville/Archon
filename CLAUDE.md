@@ -262,6 +262,36 @@ Environment variable override: `GITHUB_REPO="owner/repo"` can be set to override
 3. Test tool execution via UI MCP page
 4. Verify Supabase connection and credentials
 
+### Debug Docker/Supabase Issues
+
+**Common Issue: `archon-server` unhealthy with `PGRST125` error**
+
+```
+postgrest.exceptions.APIError: {'message': 'Invalid path specified in request URL', 'code': 'PGRST125'}
+```
+
+**Cause:** Shell environment variable `SUPABASE_URL` has `/rest/v1` appended, but the Supabase Python client adds this automatically, resulting in a duplicate path.
+
+**Diagnosis:**
+```bash
+# Check what Docker sees
+docker exec archon-server env | grep SUPABASE_URL
+
+# Should be: https://xxx.supabase.co
+# NOT: https://xxx.supabase.co/rest/v1
+```
+
+**Fix:**
+```bash
+# Option 1: Override when starting
+SUPABASE_URL="https://vrxaidusyfpkebjcvpfo.supabase.co" docker-compose up -d archon-server
+
+# Option 2: Check and fix shell profile (~/.zshrc)
+# Remove any export with /rest/v1 suffix
+```
+
+**Key Point:** Shell environment variables override `.env` file values in Docker Compose. Always check `$SUPABASE_URL` in your shell if Docker shows unexpected values.
+
 ### Fix TypeScript/Linting Issues
 
 ```bash
