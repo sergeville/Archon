@@ -15,6 +15,7 @@ services:
         BUILDKIT_INLINE_CACHE: 1
         ARCHON_SERVER_PORT: ${ARCHON_SERVER_PORT:-8181}
     container_name: archon-server
+    restart: unless-stopped
     ports:
       - "${ARCHON_SERVER_PORT:-8181}:${ARCHON_SERVER_PORT:-8181}"
     environment:
@@ -68,7 +69,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 90s
 
   # Lightweight MCP Server Service (HTTP-based)
   archon-mcp:
@@ -79,6 +80,7 @@ services:
         BUILDKIT_INLINE_CACHE: 1
         ARCHON_MCP_PORT: ${ARCHON_MCP_PORT:-8051}
     container_name: archon-mcp
+    restart: unless-stopped
     ports:
       - "${ARCHON_MCP_PORT:-8051}:${ARCHON_MCP_PORT:-8051}"
     environment:
@@ -116,7 +118,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s # Give dependencies time to start
+      start_period: 90s # Give dependencies time to start
 
   # AI Agents Service (ML/Reranking)
   archon-agents:
@@ -129,6 +131,7 @@ services:
         BUILDKIT_INLINE_CACHE: 1
         ARCHON_AGENTS_PORT: ${ARCHON_AGENTS_PORT:-8052}
     container_name: archon-agents
+    restart: unless-stopped
     ports:
       - "${ARCHON_AGENTS_PORT:-8052}:${ARCHON_AGENTS_PORT:-8052}"
     environment:
@@ -153,7 +156,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 90s
 
   # Agent Work Orders Service (Independent microservice for workflow execution)
   archon-agent-work-orders:
@@ -166,6 +169,7 @@ services:
         BUILDKIT_INLINE_CACHE: 1
         AGENT_WORK_ORDERS_PORT: ${AGENT_WORK_ORDERS_PORT:-8053}
     container_name: archon-agent-work-orders
+    restart: unless-stopped
     depends_on:
       - archon-server
     ports:
@@ -205,12 +209,13 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 90s
 
   # Frontend
   archon-frontend:
     build: ./archon-ui-main
     container_name: archon-ui
+    restart: unless-stopped
     ports:
       - "${ARCHON_UI_PORT:-3737}:3737"
     environment:
@@ -220,9 +225,9 @@ services:
       - ARCHON_SERVER_PORT=${ARCHON_SERVER_PORT:-8181}
       - HOST=${HOST:-localhost}
       - PROD=${PROD:-false}
-      - VITE_ALLOWED_HOSTS=${VITE_ALLOWED_HOSTS:-}
       - VITE_SHOW_DEVTOOLS=${VITE_SHOW_DEVTOOLS:-false}
       - DOCKER_ENV=true
+      - NODE_OPTIONS=--max-old-space-size=4096
     networks:
       - app-network
     healthcheck:
@@ -241,6 +246,7 @@ services:
   llm-streamer-redis:
     image: redis:alpine
     container_name: llm-streamer-redis
+    restart: unless-stopped
     networks:
       - app-network
     healthcheck:
@@ -252,6 +258,7 @@ services:
   llm-streamer-gateway:
     image: python:3.11-slim
     container_name: llm-streamer-gateway
+    restart: unless-stopped
     working_dir: /app
     ports:
       - "${LLM_STREAMER_PORT:-8000}:8000"
@@ -270,11 +277,12 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 90s
 
   llm-streamer-producer:
     image: python:3.11-slim
     container_name: llm-streamer-producer
+    restart: unless-stopped
     working_dir: /app
     environment:
       - REDIS_URL=redis://llm-streamer-redis:6379
@@ -290,6 +298,7 @@ services:
   llm-streamer-collector:
     image: python:3.11-slim
     container_name: llm-streamer-collector
+    restart: unless-stopped
     working_dir: /app
     environment:
       - REDIS_URL=redis://llm-streamer-redis:6379

@@ -13,6 +13,7 @@ from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel
 from pydantic_ai import Agent
+from ..server.utils.http_202_protocol import FollowUpPlan, generate_follow_up_plan
 
 logger = logging.getLogger(__name__)
 
@@ -263,3 +264,13 @@ class BaseAgent(ABC, Generic[DepsT, OutputT]):
     def agent(self) -> Agent:
         """Get the underlying PydanticAI agent instance."""
         return self._agent
+
+    async def handle_accepted_response(self, response_data: dict[str, Any]) -> FollowUpPlan:
+        """
+        Standardized handler for HTTP 202 Accepted responses.
+        Calculates a follow-up plan for the agent to monitor completion.
+        """
+        self.logger.info(f"Agent {self.name} received 202 Accepted. Planning follow-up...")
+        plan = generate_follow_up_plan(response_data)
+        self.logger.info(f"Follow-up plan generated: {plan.action} for {plan.resource_type} ({plan.progress_id})")
+        return plan

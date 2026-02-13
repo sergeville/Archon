@@ -18,6 +18,9 @@ RUN mkdir -p /app/coverage && chmod 777 /app/coverage
 # Copy source code
 COPY . .
 
+# Set memory limit for Node.js
+ENV NODE_OPTIONS=--max-old-space-size=4096
+
 # Expose the port configured in package.json (3737)
 EXPOSE 3737
 

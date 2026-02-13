@@ -11,6 +11,42 @@ import type { CreateTaskRequest, DatabaseTaskStatus, Task, TaskCounts, UpdateTas
 
 export const taskService = {
   /**
+   * Get all tasks with optional filtering
+   * Supports pagination, status filtering, and search
+   */
+  async getTasks(params?: {
+    status?: DatabaseTaskStatus;
+    project_id?: string;
+    include_closed?: boolean;
+    page?: number;
+    per_page?: number;
+    exclude_large_fields?: boolean;
+    q?: string;
+  }): Promise<{ tasks: Task[]; pagination: { total: number; page: number; per_page: number; pages: number } }> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.status) queryParams.append("status", params.status);
+      if (params?.project_id) queryParams.append("project_id", params.project_id);
+      if (params?.include_closed !== undefined) queryParams.append("include_closed", String(params.include_closed));
+      if (params?.page) queryParams.append("page", String(params.page));
+      if (params?.per_page) queryParams.append("per_page", String(params.per_page));
+      if (params?.exclude_large_fields !== undefined)
+        queryParams.append("exclude_large_fields", String(params.exclude_large_fields));
+      if (params?.q) queryParams.append("q", params.q);
+
+      const response = await callAPIWithETag<{
+        tasks: Task[];
+        pagination: { total: number; page: number; per_page: number; pages: number };
+      }>(`/api/tasks?${queryParams.toString()}`);
+
+      return response;
+    } catch (error) {
+      console.error("Failed to get tasks:", error);
+      throw error;
+    }
+  },
+
+  /**
    * Get all tasks for a project
    */
   async getTasksByProject(projectId: string): Promise<Task[]> {

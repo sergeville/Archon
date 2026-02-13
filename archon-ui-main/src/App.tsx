@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { queryClient } from './features/shared/config/queryClient';
 import { KnowledgeBasePage } from './pages/KnowledgeBasePage';
+import GlobalTodoPage from './pages/GlobalTodoPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { MCPPage } from './pages/MCPPage';
 import { OnboardingPage } from './pages/OnboardingPage';
@@ -29,6 +30,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<KnowledgeBasePage />} />
+      <Route path="/todo" element={<GlobalTodoPage />} />
       <Route path="/onboarding" element={<OnboardingPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/mcp" element={<MCPPage />} />

@@ -1,3 +1,4 @@
+import asyncio
 """
 MCP Server for Archon (Microservices Version)
 
@@ -115,30 +116,42 @@ class ArchonContext:
             self.startup_time = time.time()
 
 
-async def perform_health_checks(context: ArchonContext):
-    """Perform health checks on dependent services via HTTP."""
-    try:
-        # Check dependent services
-        service_health = await context.service_client.health_check()
+async def perform_health_checks(context: ArchonContext, retry: bool = False, max_retries: int = 10, delay: float = 2.0):
+    """Perform health checks on dependent services via HTTP with optional retries."""
+    retries = 0
+    while True:
+        try:
+            # Check dependent services
+            service_health = await context.service_client.health_check()
 
-        context.health_status["api_service"] = service_health.get("api_service", False)
-        context.health_status["agents_service"] = service_health.get("agents_service", False)
+            context.health_status["api_service"] = service_health.get("api_service", False)
+            context.health_status["agents_service"] = service_health.get("agents_service", False)
 
-        # Overall status
-        all_critical_ready = context.health_status["api_service"]
+            # Overall status
+            all_critical_ready = context.health_status["api_service"]
 
-        context.health_status["status"] = "healthy" if all_critical_ready else "degraded"
-        context.health_status["last_health_check"] = datetime.now().isoformat()
+            if all_critical_ready:
+                context.health_status["status"] = "healthy"
+                context.health_status["last_health_check"] = datetime.now().isoformat()
+                logger.info("Health check passed - dependent services healthy")
+                return True
+            
+            if not retry or retries >= max_retries:
+                context.health_status["status"] = "degraded"
+                context.health_status["last_health_check"] = datetime.now().isoformat()
+                logger.warning(f"Health check failed (attempt {retries+1}/{max_retries+1}): {context.health_status}")
+                return False
 
-        if not all_critical_ready:
-            logger.warning(f"Health check failed: {context.health_status}")
-        else:
-            logger.info("Health check passed - dependent services healthy")
+        except Exception as e:
+            logger.error(f"Health check error (attempt {retries+1}/{max_retries+1}): {e}")
+            if not retry or retries >= max_retries:
+                context.health_status["status"] = "unhealthy"
+                context.health_status["last_health_check"] = datetime.now().isoformat()
+                return False
 
-    except Exception as e:
-        logger.error(f"Health check error: {e}")
-        context.health_status["status"] = "unhealthy"
-        context.health_status["last_health_check"] = datetime.now().isoformat()
+        retries += 1
+        logger.info(f"⏳ Waiting for backend services... (attempt {retries}/{max_retries}, sleeping {delay}s)")
+        await asyncio.sleep(delay)
 
 
 @asynccontextmanager
@@ -178,10 +191,11 @@ async def lifespan(server: FastMCP) -> AsyncIterator[ArchonContext]:
             # Create context
             context = ArchonContext(service_client=service_client)
 
-            # Perform initial health check
-            await perform_health_checks(context)
+            # Perform initial health check with retries - block until backend is ready
+            logger.info("🤝 Performing initial handshake with backend services...")
+            await perform_health_checks(context, retry=True, max_retries=30, delay=3.0)
 
-            logger.info("✓ MCP server ready")
+            logger.info("✓ MCP server initialization complete and verified")
 
             # Store context globally
             _shared_context = context
@@ -192,11 +206,15 @@ async def lifespan(server: FastMCP) -> AsyncIterator[ArchonContext]:
         except Exception as e:
             logger.error(f"💥 Critical error in lifespan setup: {e}")
             logger.error(traceback.format_exc())
+            # Ensure we reset initialization flag on failure
+            _initialization_complete = False
             raise
         finally:
             # Clean up resources
-            logger.info("🧹 Cleaning up MCP server...")
-            logger.info("✅ MCP server shutdown complete")
+            logger.info("🧹 Cleaning up MCP server connection resources...")
+            # Note: We don't reset _initialization_complete here as we want to reuse 
+            # the context for other connections if this was just one connection closing
+            logger.info("✅ MCP lifespan turn complete")
 
 
 # Define MCP instructions for Claude Code and other clients
@@ -540,6 +558,20 @@ def register_modules():
         raise
     except Exception as e:
         logger.error(f"✗ Failed to register feature tools: {e}")
+        logger.error(traceback.format_exc())
+
+
+    # Application Management Tools
+    try:
+        from src.mcp_server.features.apps import register_app_tools
+
+        register_app_tools(mcp)
+        modules_registered += 1
+        logger.info("✓ App tools registered")
+    except ImportError as e:
+        logger.warning(f"⚠ App tools module not available (optional): {e}")
+    except Exception as e:
+        logger.error(f"✗ Failed to register app tools: {e}")
         logger.error(traceback.format_exc())
 
     logger.info(f"📦 Total modules registered: {modules_registered}")

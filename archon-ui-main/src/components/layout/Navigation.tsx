@@ -1,4 +1,4 @@
-import { BookOpen, Bot, Palette, Settings } from "lucide-react";
+import { ListTodo, BookOpen, Bot, Palette, Settings } from "lucide-react";
 import type React from "react";
 import { Link, useLocation } from "react-router-dom";
 // TEMPORARY: Use old SettingsContext until settings are migrated
@@ -39,6 +39,12 @@ export function Navigation({ className }: NavigationProps) {
       icon: <Bot className="h-5 w-5" />,
       label: "Agent Work Orders",
       enabled: agentWorkOrdersEnabled,
+    },
+    {
+      path: "/todo",
+      icon: <ListTodo className="h-5 w-5" />,
+      label: "Global Todo",
+      enabled: true,
     },
     {
       path: "/mcp",

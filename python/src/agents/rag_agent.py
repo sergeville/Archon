@@ -150,6 +150,12 @@ class RagAgent(BaseAgent[RagDependencies, str]):
 
                 result = json.loads(result_json)
 
+                # Check for 202 Accepted status
+                if result.get("status") == "accepted":
+                    progress_id = result.get("progress_id")
+                    message = result.get("message", "Search queued")
+                    return f"Search accepted (Progress ID: {progress_id}). {message}. This may take a moment."
+
                 if not result.get("success", False):
                     return f"Search failed: {result.get('error', 'Unknown error')}"
 
@@ -197,6 +203,11 @@ class RagAgent(BaseAgent[RagDependencies, str]):
                 import json
 
                 result = json.loads(result_json)
+
+                # Check for 202 Accepted status
+                if result.get("status") == "accepted":
+                    progress_id = result.get("progress_id")
+                    return f"Source listing queued (Progress ID: {progress_id}). Please check back shortly."
 
                 if not result.get("success", False):
                     return f"Failed to get sources: {result.get('error', 'Unknown error')}"
