@@ -62,6 +62,7 @@ class UpdateProjectRequest(BaseModel):
     technical_sources: list[str] | None = None  # List of knowledge source IDs
     business_sources: list[str] | None = None  # List of knowledge source IDs
     pinned: bool | None = None  # Whether this project is pinned to top
+    archived: bool | None = None  # Whether this project is archived
 
 
 class CreateTaskRequest(BaseModel):
@@ -366,6 +367,7 @@ async def get_project(project_id: str):
             "features": project.get("features", []),
             "data": project.get("data", []),
             "pinned": project.get("pinned", False),
+            "archived": project.get("archived", False),
         }
 
     except HTTPException:
@@ -397,6 +399,8 @@ async def update_project(project_id: str, request: UpdateProjectRequest):
             update_fields["data"] = request.data
         if request.pinned is not None:
             update_fields["pinned"] = request.pinned
+        if request.archived is not None:
+            update_fields["archived"] = request.archived
 
         # Create version snapshots for JSONB fields before updating
         if update_fields:

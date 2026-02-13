@@ -103,6 +103,7 @@ class ProjectService:
                         "created_at": project["created_at"],
                         "updated_at": project["updated_at"],
                         "pinned": project.get("pinned", False),
+                        "archived": project.get("archived", False),
                         "description": project.get("description", ""),
                         "docs": project.get("docs", []),
                         "features": project.get("features", []),
@@ -133,6 +134,7 @@ class ProjectService:
                         "created_at": project["created_at"],
                         "updated_at": project["updated_at"],
                         "pinned": project.get("pinned", False),
+                        "archived": project.get("archived", False),
                         "description": project.get("description", ""),
                         "stats": {
                             "docs_count": docs_count,
@@ -338,6 +340,7 @@ class ProjectService:
                 "technical_sources",
                 "business_sources",
                 "pinned",
+                "archived",
             ]
 
             for field in allowed_fields:

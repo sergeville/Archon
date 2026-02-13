@@ -162,6 +162,7 @@ class SourceLinkingService:
             "technical_sources": sources["technical_sources"],
             "business_sources": sources["business_sources"],
             "pinned": project.get("pinned", False),
+            "archived": project.get("archived", False),
         }
 
     def format_projects_with_sources(self, projects: list[dict[str, Any]]) -> list[dict[str, Any]]:
