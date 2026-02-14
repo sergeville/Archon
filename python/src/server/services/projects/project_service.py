@@ -11,6 +11,7 @@ from datetime import datetime
 from typing import Any
 
 from src.server.utils import get_supabase_client
+from ...utils.embeddings import get_embedding_service
 
 from ...config.logfire_config import get_logger
 
@@ -104,6 +105,7 @@ class ProjectService:
                         "updated_at": project["updated_at"],
                         "pinned": project.get("pinned", False),
                         "archived": project.get("archived", False),
+                        "status": project.get("status", "Archived" if project.get("archived") else "Active"),
                         "description": project.get("description", ""),
                         "docs": project.get("docs", []),
                         "features": project.get("features", []),
@@ -135,6 +137,7 @@ class ProjectService:
                         "updated_at": project["updated_at"],
                         "pinned": project.get("pinned", False),
                         "archived": project.get("archived", False),
+                        "status": project.get("status", "Archived" if project.get("archived") else "Active"),
                         "description": project.get("description", ""),
                         "stats": {
                             "docs_count": docs_count,
@@ -341,11 +344,37 @@ class ProjectService:
                 "business_sources",
                 "pinned",
                 "archived",
+                "status",
             ]
 
             for field in allowed_fields:
                 if field in update_fields:
                     update_data[field] = update_fields[field]
+
+            # Synchronize archived and status
+            if update_data.get("status") == "Archived":
+                update_data["archived"] = True
+            elif "status" in update_data and update_data["status"] != "Archived":
+                update_data["archived"] = False
+            
+            if update_data.get("archived") is True and "status" not in update_data:
+                update_data["status"] = "Archived"
+            elif update_data.get("archived") is False and "status" not in update_data:
+                update_data["status"] = "Active"
+
+            # Automatic title cleanup when archiving
+            # If archived is set to True, ensure title doesn't contain [ARCHIVED] prefix
+            if update_data.get("archived") is True:
+                current_title = update_data.get("title")
+                if current_title is None:
+                    # Fetch current title if not provided in update
+                    get_res = self.supabase_client.table("archon_projects").select("title").eq("id", project_id).execute()
+                    if get_res.data:
+                        current_title = get_res.data[0].get("title")
+                
+                if current_title and "[ARCHIVED]" in current_title:
+                    update_data["title"] = current_title.replace("[ARCHIVED]", "").lstrip()
+
 
             # Handle pinning logic - only one project can be pinned at a time
             if update_fields.get("pinned") is True:
@@ -387,3 +416,63 @@ class ProjectService:
         except Exception as e:
             logger.error(f"Error updating project: {e}")
             return False, {"error": f"Error updating project: {str(e)}"}
+
+    async def search_projects_semantic(
+        self,
+        query: str,
+        limit: int = 10,
+        threshold: float = 0.7
+    ) -> tuple[bool, list[dict] | dict]:
+        """
+        Search projects using semantic similarity.
+
+        Args:
+            query: Search query text
+            limit: Maximum results to return (default: 10)
+            threshold: Minimum similarity score 0-1 (default: 0.7)
+
+        Returns:
+            Tuple of (success, results) where results is list of projects with similarity scores
+
+        Example:
+            success, results = await service.search_projects_semantic(
+                query="web development projects",
+                limit=5,
+                threshold=0.75
+            )
+        """
+        try:
+            logger.info(f"Semantic search for projects: {query[:50]}...")
+
+            # Get embedding service
+            embedding_service = get_embedding_service()
+
+            # Generate embedding for query
+            query_embedding = await embedding_service.generate_embedding(query)
+
+            if not query_embedding:
+                logger.warning("Failed to generate query embedding")
+                return True, []
+
+            # Call database function for semantic search
+            response = self.supabase_client.rpc(
+                "search_projects_semantic",
+                {
+                    "p_query_embedding": query_embedding,
+                    "p_limit": limit,
+                    "p_threshold": threshold
+                }
+            ).execute()
+
+            results = response.data or []
+
+            logger.info(
+                f"Semantic search returned {len(results)} projects "
+                f"(threshold: {threshold})"
+            )
+
+            return True, results
+
+        except Exception as e:
+            logger.error(f"Failed to search projects semantically: {e}", exc_info=True)
+            return False, {"error": f"Semantic search failed: {str(e)}"}

@@ -63,6 +63,7 @@ class UpdateProjectRequest(BaseModel):
     business_sources: list[str] | None = None  # List of knowledge source IDs
     pinned: bool | None = None  # Whether this project is pinned to top
     archived: bool | None = None  # Whether this project is archived
+    status: str | None = None  # Lifecycle status (Prototype, In Progress, etc.)
 
 
 class CreateTaskRequest(BaseModel):
@@ -74,6 +75,13 @@ class CreateTaskRequest(BaseModel):
     task_order: int | None = 0
     priority: str | None = "medium"
     feature: str | None = None
+
+
+class SemanticSearchRequest(BaseModel):
+    query: str
+    limit: int = 10
+    threshold: float = 0.7
+    project_id: str | None = None  # For task search filtering
 
 
 @router.get("/projects")
@@ -368,6 +376,7 @@ async def get_project(project_id: str):
             "data": project.get("data", []),
             "pinned": project.get("pinned", False),
             "archived": project.get("archived", False),
+            "status": project.get("status", "Archived" if project.get("archived") else "Active"),
         }
 
     except HTTPException:
@@ -401,6 +410,8 @@ async def update_project(project_id: str, request: UpdateProjectRequest):
             update_fields["pinned"] = request.pinned
         if request.archived is not None:
             update_fields["archived"] = request.archived
+        if request.status is not None:
+            update_fields["status"] = request.status
 
         # Create version snapshots for JSONB fields before updating
         if update_fields:
@@ -1280,3 +1291,102 @@ async def restore_project_version(
             f"Failed to restore version | error={str(e)} | project_id={project_id} | field_name={field_name} | version_number={version_number}"
         )
         raise HTTPException(status_code=500, detail={"error": str(e)})
+
+
+# =====================================================
+# SEMANTIC SEARCH ENDPOINTS
+# =====================================================
+
+
+@router.post("/tasks/search")
+async def search_tasks_semantic(request: SemanticSearchRequest):
+    """
+    Search tasks using semantic similarity.
+
+    Finds tasks that are semantically similar to the query text,
+    ranked by cosine similarity of their embeddings.
+
+    Args:
+        query: Search query text
+        limit: Maximum results to return (default: 10)
+        threshold: Minimum similarity score 0-1 (default: 0.7)
+        project_id: Optional project ID to filter results
+
+    Returns:
+        List of tasks with similarity scores
+    """
+    try:
+        task_service = TaskService()
+        success, results = await task_service.search_tasks_semantic(
+            query=request.query,
+            limit=request.limit,
+            threshold=request.threshold,
+            project_id=request.project_id
+        )
+
+        if not success:
+            raise HTTPException(
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=results.get("error", "Search failed")
+            )
+
+        return {
+            "query": request.query,
+            "results": results,
+            "count": len(results)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in semantic task search: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to search tasks: {str(e)}"
+        )
+
+
+@router.post("/projects/search")
+async def search_projects_semantic(request: SemanticSearchRequest):
+    """
+    Search projects using semantic similarity.
+
+    Finds projects that are semantically similar to the query text,
+    ranked by cosine similarity of their embeddings.
+
+    Args:
+        query: Search query text
+        limit: Maximum results to return (default: 10)
+        threshold: Minimum similarity score 0-1 (default: 0.7)
+
+    Returns:
+        List of projects with similarity scores
+    """
+    try:
+        project_service = ProjectService()
+        success, results = await project_service.search_projects_semantic(
+            query=request.query,
+            limit=request.limit,
+            threshold=request.threshold
+        )
+
+        if not success:
+            raise HTTPException(
+                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=results.get("error", "Search failed")
+            )
+
+        return {
+            "query": request.query,
+            "results": results,
+            "count": len(results)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in semantic project search: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to search projects: {str(e)}"
+        )

@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Any
 
 from src.server.utils import get_supabase_client
+from ...utils.embeddings import get_embedding_service
 
 from ...config.logfire_config import get_logger
 
@@ -524,3 +525,72 @@ class TaskService:
         except Exception as e:
             logger.error(f"Error fetching task counts: {e}")
             return False, {"error": f"Error fetching task counts: {str(e)}"}
+
+    async def search_tasks_semantic(
+        self,
+        query: str,
+        limit: int = 10,
+        threshold: float = 0.7,
+        project_id: str | None = None
+    ) -> tuple[bool, list[dict] | dict]:
+        """
+        Search tasks using semantic similarity.
+
+        Args:
+            query: Search query text
+            limit: Maximum results to return (default: 10)
+            threshold: Minimum similarity score 0-1 (default: 0.7)
+            project_id: Optional project ID to filter results
+
+        Returns:
+            Tuple of (success, results) where results is list of tasks with similarity scores
+
+        Example:
+            success, results = await service.search_tasks_semantic(
+                query="database migration tasks",
+                limit=5,
+                threshold=0.75
+            )
+        """
+        try:
+            logger.info(f"Semantic search for tasks: {query[:50]}...")
+
+            # Get embedding service
+            embedding_service = get_embedding_service()
+
+            # Generate embedding for query
+            query_embedding = await embedding_service.generate_embedding(query)
+
+            if not query_embedding:
+                logger.warning("Failed to generate query embedding")
+                return True, []
+
+            # Build RPC parameters
+            rpc_params = {
+                "p_query_embedding": query_embedding,
+                "p_limit": limit,
+                "p_threshold": threshold
+            }
+
+            if project_id:
+                rpc_params["p_project_id"] = project_id
+
+            # Call database function for semantic search
+            # Note: This function needs to be created in the database
+            response = self.supabase_client.rpc(
+                "search_tasks_semantic",
+                rpc_params
+            ).execute()
+
+            results = response.data or []
+
+            logger.info(
+                f"Semantic search returned {len(results)} tasks "
+                f"(threshold: {threshold})"
+            )
+
+            return True, results
+
+        except Exception as e:
+            logger.error(f"Failed to search tasks semantically: {e}", exc_info=True)
+            return False, {"error": f"Semantic search failed: {str(e)}"}

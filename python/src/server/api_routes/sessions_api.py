@@ -283,3 +283,30 @@ async def get_recent_sessions(agent: str, days: int = 7, limit: int = 20):
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get recent sessions: {str(e)}"
         )
+
+
+@router.post("/search/all")
+async def search_all_memory(request: SearchSessionsRequest):
+    """
+    Unified semantic search across all memory layers (sessions, tasks, projects).
+
+    Returns results from sessions, tasks, and projects, ranked by similarity.
+    Each result includes a 'type' field indicating which layer it came from.
+    """
+    try:
+        results = await session_service.search_all_memory(
+            query=request.query,
+            limit=request.limit,
+            threshold=request.threshold
+        )
+        return {
+            "query": request.query,
+            "results": results,
+            "count": len(results)
+        }
+    except Exception as e:
+        logger.error(f"Error in unified memory search: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to search memory: {str(e)}"
+        )

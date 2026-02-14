@@ -724,6 +724,65 @@ class SessionService:
             logger.error(f"Failed to get active sessions: {e}", exc_info=True)
             raise
 
+    async def search_all_memory(
+        self,
+        query: str,
+        limit: int = 10,
+        threshold: float = 0.7
+    ) -> list[dict]:
+        """
+        Unified semantic search across all memory layers (sessions, tasks, projects).
+
+        Args:
+            query: Search query text
+            limit: Maximum results to return across all layers
+            threshold: Minimum similarity score (0-1, default 0.7)
+
+        Returns:
+            List of results from all memory layers with type, similarity, and metadata
+
+        Example:
+            results = await service.search_all_memory(
+                query="database migration",
+                limit=20,
+                threshold=0.75
+            )
+            for result in results:
+                print(f"{result['type']}: {result['title']} (similarity: {result['similarity']})")
+        """
+        try:
+            logger.info(f"Unified memory search for: {query[:50]}...")
+
+            # Generate embedding for query
+            query_embedding = await self.embedding_service.generate_embedding(query)
+
+            if not query_embedding:
+                logger.warning("Failed to generate query embedding")
+                return []
+
+            # Call database function for unified search
+            response = self.supabase.rpc(
+                "search_all_memory_semantic",
+                {
+                    "p_query_embedding": query_embedding,
+                    "p_limit": limit,
+                    "p_threshold": threshold
+                }
+            ).execute()
+
+            results = response.data or []
+
+            logger.info(
+                f"Unified search returned {len(results)} results across all memory layers "
+                f"(threshold: {threshold})"
+            )
+
+            return results
+
+        except Exception as e:
+            logger.error(f"Failed to search all memory: {e}", exc_info=True)
+            raise
+
 
 # Singleton instance for convenience
 _session_service: Optional[SessionService] = None
