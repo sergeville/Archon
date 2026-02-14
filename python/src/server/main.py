@@ -35,6 +35,7 @@ from .api_routes.version_api import router as version_router
 
 # Import modular API routers
 from .api_routes.settings_api import router as settings_router
+from .api_routes.sessions_api import router as sessions_router
 
 # Import Logfire configuration
 from .config.logfire_config import api_logger, setup_logfire
@@ -112,6 +113,14 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             api_logger.warning(f"Could not initialize prompt service: {e}")
 
+        # Start Auto-Archive Service
+        try:
+            from .services.projects.auto_archive_service import auto_archive_service
+            await auto_archive_service.start()
+            api_logger.info("✅ Auto-Archive service started")
+        except Exception as e:
+            api_logger.warning(f"Could not start auto-archive service: {e}")
+
 
         # MCP Client functionality removed from architecture
         # Agents now use MCP tools directly
@@ -131,6 +140,12 @@ async def lifespan(app: FastAPI):
     api_logger.info("🛑 Shutting down Archon backend...")
 
     try:
+        # Stop Auto-Archive Service
+        try:
+            from .services.projects.auto_archive_service import auto_archive_service
+            await auto_archive_service.stop()
+        except Exception:
+            pass
         # MCP Client cleanup not needed
 
         # Cleanup crawling context
@@ -190,6 +205,7 @@ app.include_router(pages_router)
 app.include_router(ollama_router)
 app.include_router(openrouter_router)
 app.include_router(projects_router)
+app.include_router(sessions_router)
 app.include_router(progress_router)
 app.include_router(agent_chat_router)
 app.include_router(agent_work_orders_router)  # Proxy to independent agent work orders service

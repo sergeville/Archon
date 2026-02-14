@@ -81,8 +81,9 @@ class EmbeddingService:
             return embedding
 
         except Exception as e:
-            logger.error(f"Embedding generation failed: {e}", exc_info=True)
-            raise
+            logger.warning(f"Embedding generation failed: {str(e)}")
+            logger.debug("Embedding failure details", exc_info=True)
+            return None
 
     async def generate_task_embedding(self, task: dict) -> Optional[list[float]]:
         """

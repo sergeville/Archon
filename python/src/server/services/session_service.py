@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID
 
-from ..config.database import get_supabase_client
+from ..utils import get_supabase_client
 from ..config.logfire_config import get_logger
 from ..utils.embeddings import get_embedding_service
 
@@ -35,6 +35,7 @@ class SessionService:
         self,
         agent: str,
         project_id: Optional[UUID] = None,
+        context: Optional[dict] = None,
         metadata: Optional[dict] = None
     ) -> dict:
         """
@@ -43,7 +44,8 @@ class SessionService:
         Args:
             agent: Agent identifier (claude, gemini, gpt, user)
             project_id: Optional UUID of associated project
-            metadata: Optional additional context
+            context: Optional session context data
+            metadata: Optional additional metadata
 
         Returns:
             Created session dictionary
@@ -52,7 +54,8 @@ class SessionService:
             session = await service.create_session(
                 agent="claude",
                 project_id="uuid-here",
-                metadata={"context": "Phase 2 implementation"}
+                context={"working_on": "Phase 2 implementation"},
+                metadata={"environment": "development"}
             )
         """
         try:
@@ -62,6 +65,7 @@ class SessionService:
             session_data = {
                 "agent": agent,
                 "started_at": datetime.now(timezone.utc).isoformat(),
+                "context": context or {},
                 "metadata": metadata or {}
             }
 
@@ -92,7 +96,8 @@ class SessionService:
     async def end_session(
         self,
         session_id: UUID,
-        summary: Optional[str] = None
+        summary: Optional[str] = None,
+        metadata: Optional[dict] = None
     ) -> dict:
         """
         End a session and optionally add a summary.
@@ -100,6 +105,7 @@ class SessionService:
         Args:
             session_id: UUID of session to end
             summary: Optional summary text (can be AI-generated later)
+            metadata: Optional metadata to update
 
         Returns:
             Updated session dictionary
@@ -107,7 +113,8 @@ class SessionService:
         Example:
             ended = await service.end_session(
                 session_id=uuid,
-                summary="Completed Phase 2 Day 1 database migration"
+                summary="Completed Phase 2 Day 1 database migration",
+                metadata={"outcome": "success"}
             )
         """
         try:
@@ -125,6 +132,9 @@ class SessionService:
                 embedding = await self.embedding_service.generate_embedding(summary)
                 if embedding:
                     update_data["embedding"] = embedding
+
+            if metadata:
+                update_data["metadata"] = metadata
 
             # Update session
             response = self.supabase.table("archon_sessions").update(
@@ -148,7 +158,8 @@ class SessionService:
         self,
         session_id: UUID,
         event_type: str,
-        event_data: dict
+        event_data: dict,
+        metadata: Optional[dict] = None
     ) -> dict:
         """
         Log an event to a session.
@@ -166,6 +177,7 @@ class SessionService:
             session_id: UUID of parent session
             event_type: Type of event (see above)
             event_data: Event-specific data (JSON)
+            metadata: Optional event metadata
 
         Returns:
             Created event dictionary
@@ -174,7 +186,8 @@ class SessionService:
             event = await service.add_event(
                 session_id=uuid,
                 event_type="task_created",
-                event_data={"task_id": "123", "title": "New task"}
+                event_data={"task_id": "123", "title": "New task"},
+                metadata={"source": "api"}
             )
         """
         try:
@@ -185,6 +198,7 @@ class SessionService:
                 "session_id": str(session_id),
                 "event_type": event_type,
                 "event_data": event_data,
+                "metadata": metadata or {},
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
 
@@ -214,6 +228,46 @@ class SessionService:
 
         except Exception as e:
             logger.error(f"Failed to add event: {e}", exc_info=True)
+            raise
+
+    async def get_session_events(
+        self,
+        session_id: str,
+        limit: int = 100
+    ) -> list[dict]:
+        """
+        Get events for a specific session.
+
+        Args:
+            session_id: Session ID to get events for
+            limit: Maximum number of events to return
+
+        Returns:
+            List of event dictionaries ordered by timestamp
+
+        Example:
+            events = await service.get_session_events("uuid-here", limit=50)
+        """
+        try:
+            logger.debug(f"Getting events for session {session_id}")
+
+            # Get events for this session
+            response = self.supabase.table("archon_session_events").select(
+                "*"
+            ).eq("session_id", session_id).order(
+                "timestamp", desc=False
+            ).limit(limit).execute()
+
+            events = response.data or []
+
+            logger.info(
+                f"Retrieved {len(events)} events for session {session_id}"
+            )
+
+            return events
+
+        except Exception as e:
+            logger.error(f"Failed to get session events: {e}", exc_info=True)
             raise
 
     async def get_session(self, session_id: UUID) -> Optional[dict]:
@@ -516,6 +570,68 @@ class SessionService:
 
         except Exception as e:
             logger.error(f"Failed to get recent sessions: {e}", exc_info=True)
+            raise
+
+    async def update_session(
+        self,
+        session_id: str,
+        updates: dict
+    ) -> Optional[dict]:
+        """
+        Update a session with partial updates.
+
+        Args:
+            session_id: Session ID to update
+            updates: Dictionary of fields to update (summary, context, metadata)
+
+        Returns:
+            Updated session dictionary or None if not found
+
+        Example:
+            updated = await service.update_session(
+                session_id="uuid-here",
+                updates={"summary": "New summary", "metadata": {"updated": True}}
+            )
+        """
+        try:
+            logger.info(f"Updating session {session_id}")
+
+            # Prepare update data
+            update_data = {}
+
+            if "summary" in updates and updates["summary"] is not None:
+                update_data["summary"] = updates["summary"]
+
+            if "context" in updates and updates["context"] is not None:
+                update_data["context"] = updates["context"]
+
+            if "metadata" in updates and updates["metadata"] is not None:
+                update_data["metadata"] = updates["metadata"]
+
+            if not update_data:
+                logger.warning(f"No valid updates provided for session {session_id}")
+                return await self.get_session(session_id)
+
+            # Update timestamp
+            update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+
+            # Update session
+            response = self.supabase.table("archon_sessions").update(
+                update_data
+            ).eq("id", session_id).execute()
+
+            if not response.data:
+                logger.warning(f"Session not found: {session_id}")
+                return None
+
+            session = response.data[0]
+
+            logger.info(f"Session updated: {session_id}")
+
+            return session
+
+        except Exception as e:
+            logger.error(f"Failed to update session: {e}", exc_info=True)
             raise
 
     async def update_session_summary(
