@@ -18,6 +18,7 @@ export const taskService = {
     status?: DatabaseTaskStatus;
     project_id?: string;
     include_closed?: boolean;
+    include_archived?: boolean;
     page?: number;
     per_page?: number;
     exclude_large_fields?: boolean;
@@ -28,6 +29,7 @@ export const taskService = {
       if (params?.status) queryParams.append("status", params.status);
       if (params?.project_id) queryParams.append("project_id", params.project_id);
       if (params?.include_closed !== undefined) queryParams.append("include_closed", String(params.include_closed));
+      if (params?.include_archived !== undefined) queryParams.append("include_archived", String(params.include_archived));
       if (params?.page) queryParams.append("page", String(params.page));
       if (params?.per_page) queryParams.append("per_page", String(params.per_page));
       if (params?.exclude_large_fields !== undefined)

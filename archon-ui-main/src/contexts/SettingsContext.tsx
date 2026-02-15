@@ -36,27 +36,24 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     try {
       setLoading(true);
 
-      // Load Projects, Style Guide, and Agent Work Orders settings
-      const [projectsResponse, styleGuideResponse, agentWorkOrdersResponse] = await Promise.all([
-        credentialsService.getCredential('PROJECTS_ENABLED').catch(() => ({ value: undefined })),
-        credentialsService.getCredential('STYLE_GUIDE_ENABLED').catch(() => ({ value: undefined })),
-        credentialsService.getCredential('AGENT_WORK_ORDERS_ENABLED').catch(() => ({ value: undefined }))
-      ]);
+      // Batch load Projects, Style Guide, and Agent Work Orders settings using the optimized status-check endpoint
+      const keys = ['PROJECTS_ENABLED', 'STYLE_GUIDE_ENABLED', 'AGENT_WORK_ORDERS_ENABLED'];
+      const statusMap = await credentialsService.checkCredentialStatus(keys);
 
-      if (projectsResponse.value !== undefined) {
-        setProjectsEnabledState(projectsResponse.value === 'true');
+      if (statusMap['PROJECTS_ENABLED']?.has_value) {
+        setProjectsEnabledState(statusMap['PROJECTS_ENABLED'].value === 'true');
       } else {
         setProjectsEnabledState(true); // Default to true
       }
 
-      if (styleGuideResponse.value !== undefined) {
-        setStyleGuideEnabledState(styleGuideResponse.value === 'true');
+      if (statusMap['STYLE_GUIDE_ENABLED']?.has_value) {
+        setStyleGuideEnabledState(statusMap['STYLE_GUIDE_ENABLED'].value === 'true');
       } else {
         setStyleGuideEnabledState(false); // Default to false
       }
 
-      if (agentWorkOrdersResponse.value !== undefined) {
-        setAgentWorkOrdersEnabledState(agentWorkOrdersResponse.value === 'true');
+      if (statusMap['AGENT_WORK_ORDERS_ENABLED']?.has_value) {
+        setAgentWorkOrdersEnabledState(statusMap['AGENT_WORK_ORDERS_ENABLED'].value === 'true');
       } else {
         setAgentWorkOrdersEnabledState(false); // Default to false
       }

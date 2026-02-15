@@ -310,3 +310,42 @@ async def search_all_memory(request: SearchSessionsRequest):
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to search memory: {str(e)}"
         )
+
+
+@router.post("/{session_id}/summarize")
+async def summarize_session(session_id: str):
+    """
+    Generate AI-powered summary of a session using PydanticAI.
+
+    Analyzes session events and generates a structured summary including:
+    - Overall summary of what happened
+    - Key events and actions
+    - Decisions made
+    - Outcomes achieved
+    - Suggested next steps
+
+    The summary is saved to the session's summary field and detailed
+    metadata is stored in the session's metadata.ai_summary field.
+    """
+    try:
+        from uuid import UUID
+
+        session_uuid = UUID(session_id)
+        summary = await session_service.summarize_session(session_uuid)
+
+        return {
+            "session_id": session_id,
+            "summary": summary,
+            "message": "Session summary generated successfully"
+        }
+    except ValueError:
+        raise HTTPException(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            detail="Invalid session ID format"
+        )
+    except Exception as e:
+        logger.error(f"Error summarizing session {session_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to summarize session: {str(e)}"
+        )

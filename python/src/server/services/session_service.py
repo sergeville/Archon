@@ -783,6 +783,91 @@ class SessionService:
             logger.error(f"Failed to search all memory: {e}", exc_info=True)
             raise
 
+    async def summarize_session(self, session_id: UUID) -> str:
+        """
+        Generate AI-powered summary of a session using PydanticAI.
+
+        Analyzes session events and generates a structured summary including:
+        - Overall summary of what happened
+        - Key events and actions
+        - Decisions made
+        - Outcomes achieved
+        - Suggested next steps
+
+        Args:
+            session_id: UUID of the session to summarize
+
+        Returns:
+            Summary string
+
+        Raises:
+            Exception: If session not found or summarization fails
+
+        Example:
+            summary = await service.summarize_session(session_id)
+            print(summary)
+        """
+        try:
+            logger.info(f"Generating AI summary for session: {session_id}")
+
+            # Import here to avoid circular dependency
+            from ...agents.features.session_summarizer import summarize_session
+
+            # Get session data
+            session_response = self.supabase.table("archon_sessions").select(
+                "*"
+            ).eq("id", str(session_id)).single().execute()
+
+            if not session_response.data:
+                raise Exception(f"Session not found: {session_id}")
+
+            session = session_response.data
+
+            # Get session events
+            events_response = self.supabase.table("archon_session_events").select(
+                "*"
+            ).eq("session_id", str(session_id)).order(
+                "timestamp", desc=False
+            ).execute()
+
+            events = events_response.data or []
+
+            logger.info(f"Found {len(events)} events for session {session_id}")
+
+            # Generate summary using PydanticAI agent
+            summary_result = await summarize_session(session, events)
+
+            # Update session with summary and extracted metadata
+            update_data = {
+                "summary": summary_result.summary,
+                "metadata": {
+                    **(session.get("metadata") or {}),
+                    "ai_summary": {
+                        "key_events": summary_result.key_events,
+                        "decisions": summary_result.decisions_made,
+                        "outcomes": summary_result.outcomes,
+                        "next_steps": summary_result.next_steps,
+                        "summarized_at": datetime.now(timezone.utc).isoformat()
+                    }
+                }
+            }
+
+            self.supabase.table("archon_sessions").update(
+                update_data
+            ).eq("id", str(session_id)).execute()
+
+            logger.info(
+                f"Session summary generated and saved: {len(summary_result.summary)} chars, "
+                f"{len(summary_result.key_events)} events, "
+                f"{len(summary_result.outcomes)} outcomes"
+            )
+
+            return summary_result.summary
+
+        except Exception as e:
+            logger.error(f"Failed to summarize session {session_id}: {e}", exc_info=True)
+            raise
+
 
 # Singleton instance for convenience
 _session_service: Optional[SessionService] = None

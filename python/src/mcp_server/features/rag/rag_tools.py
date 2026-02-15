@@ -39,15 +39,24 @@ def register_rag_tools(mcp: FastMCP):
     """Register all RAG tools with the MCP server."""
 
     @mcp.tool()
-    async def rag_get_available_sources(ctx: Context) -> str:
+    async def rag_get_available_sources(
+        ctx: Context, page: int = 1, per_page: int = 50
+    ) -> str:
         """
-        Get list of available sources in the knowledge base.
+        Get list of available sources in the knowledge base with pagination.
+
+        Args:
+            page: Page number (default: 1)
+            per_page: Items per page (default: 50)
 
         Returns:
             JSON string with structure:
             - success: bool - Operation success status
             - sources: list[dict] - Array of source objects
-            - count: int - Number of sources
+            - total: int - Total number of sources across all pages
+            - page: int - Current page
+            - per_page: int - Items per page
+            - count: int - Number of sources in this response
             - error: str - Error description if success=false
         """
         try:
@@ -55,14 +64,29 @@ def register_rag_tools(mcp: FastMCP):
             timeout = httpx.Timeout(30.0, connect=5.0)
 
             async with httpx.AsyncClient(timeout=timeout) as client:
-                response = await client.get(urljoin(api_url, "/api/rag/sources"))
+                # Use knowledge-items/summary endpoint which supports pagination
+                params = {"page": page, "per_page": per_page}
+                response = await client.get(
+                    urljoin(api_url, "/api/knowledge-items/summary"),
+                    params=params
+                )
 
                 if response.status_code == 200:
                     result = response.json()
-                    sources = result.get("sources", [])
+                    # The summary endpoint returns {items, total, page, per_page, pages}
+                    sources = result.get("items", [])
+                    total = result.get("total", 0)
 
                     return json.dumps(
-                        {"success": True, "sources": sources, "count": len(sources)}, indent=2
+                        {
+                            "success": True, 
+                            "sources": sources, 
+                            "total": total,
+                            "page": page,
+                            "per_page": per_page,
+                            "count": len(sources)
+                        }, 
+                        indent=2
                     )
                 else:
                     error_detail = response.text

@@ -45,6 +45,7 @@ class WorkflowStep(str, Enum):
 
     CREATE_BRANCH = "create-branch"
     PLANNING = "planning"
+    AGILE_PLANNING = "agile-planning"
     EXECUTE = "execute"
     COMMIT = "commit"
     CREATE_PR = "create-pr"

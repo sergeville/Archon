@@ -27,6 +27,13 @@ def get_supabase_client() -> Client:
             "SUPABASE_URL and SUPABASE_SERVICE_KEY must be set in environment variables"
         )
 
+    # Robustness fix: Ensure URL is the base Supabase URL, not the PostgREST URL
+    # supabase-python appends /rest/v1 itself.
+    if url.endswith("/rest/v1"):
+        url = url[:-8]
+    elif url.endswith("/rest/v1/"):
+        url = url[:-9]
+
     try:
         # Let Supabase handle connection pooling internally
         client = create_client(url, key)

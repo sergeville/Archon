@@ -17,9 +17,83 @@ from .agent_names import (
     PLANNER,
     PR_CREATOR,
     REVIEWER,
+    ORCHESTRATOR = "Orchestrator",
 )
 
 logger = get_logger(__name__)
+
+
+async def run_agile_planning_step(
+    executor: AgentCLIExecutor,
+    command_loader: ClaudeCommandLoader,
+    work_order_id: str,
+    working_dir: str,
+    context: dict,
+) -> StepExecutionResult:
+    """Execute agile-planning.md command (BMAD Method)
+
+    Creates/updates workflow_state.md and determines the Next Story.
+
+    Args:
+        executor: CLI executor for running claude commands
+        command_loader: Loads command files
+        work_order_id: Work order ID for logging
+        working_dir: Directory to run command in
+        context: Shared context with user_request and optional github_issue_number
+
+    Returns:
+        StepExecutionResult with path to Next Story plan in output
+    """
+    start_time = time.time()
+
+    try:
+        command_file = command_loader.load_command("agile-planning")
+
+        # Get args from context
+        user_request = context.get("user_request", "")
+        github_issue_number = context.get("github_issue_number") or ""
+
+        cli_command, prompt_text = executor.build_command(
+            command_file, args=[user_request, github_issue_number]
+        )
+
+        result = await executor.execute_async(
+            cli_command, working_dir,
+            prompt_text=prompt_text,
+            work_order_id=work_order_id
+        )
+
+        duration = time.time() - start_time
+
+        if result.success and result.result_text:
+            plan_file = result.result_text.strip()
+            return StepExecutionResult(
+                step=WorkflowStep.AGILE_PLANNING,
+                agent_name=ORCHESTRATOR,
+                success=True,
+                output=plan_file,
+                duration_seconds=duration,
+                session_id=result.session_id,
+            )
+        else:
+            return StepExecutionResult(
+                step=WorkflowStep.AGILE_PLANNING,
+                agent_name=ORCHESTRATOR,
+                success=False,
+                error_message=result.error_message or "Agile planning failed",
+                duration_seconds=duration,
+            )
+
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error("agile_planning_step_error", error=str(e), exc_info=True)
+        return StepExecutionResult(
+            step=WorkflowStep.AGILE_PLANNING,
+            agent_name=ORCHESTRATOR,
+            success=False,
+            error_message=str(e),
+            duration_seconds=duration,
+        )
 
 
 async def run_create_branch_step(
@@ -193,10 +267,10 @@ async def run_execute_step(
     try:
         command_file = command_loader.load_command("execute")
 
-        # Get plan file from context (output of planning step)
-        plan_file = context.get("planning", "")
+        # Get plan file from context (output of planning or agile-planning step)
+        plan_file = context.get("agile-planning") or context.get("planning", "")
         if not plan_file:
-            raise ValueError("No plan file found in context. Planning step must run before execute.")
+            raise ValueError("No plan file found in context. A planning step must run before execute.")
 
         cli_command, prompt_text = executor.build_command(
             command_file, args=[plan_file]
@@ -413,10 +487,10 @@ async def run_review_step(
     try:
         command_file = command_loader.load_command("prp-review")
 
-        # Get plan file from context
-        plan_file = context.get("planning", "")
+        # Get plan file from context (output of planning or agile-planning step)
+        plan_file = context.get("agile-planning") or context.get("planning", "")
         if not plan_file:
-            raise ValueError("No plan file found in context. Planning step must run before review.")
+            raise ValueError("No plan file found in context. A planning step must run before review.")
 
         cli_command, prompt_text = executor.build_command(
             command_file, args=[plan_file]

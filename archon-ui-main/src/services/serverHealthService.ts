@@ -16,7 +16,7 @@ class ServerHealthService {
 
   // Settings
   private disconnectScreenEnabled: boolean = true;
-  private maxMissedChecks: number = 2; // Show disconnect after 2 missed checks (60 seconds max with 30s interval)
+  private maxMissedChecks: number = 5; // Show disconnect after 5 missed checks (150 seconds max with 30s interval)
   private checkInterval: number = HEALTH_CHECK_INTERVAL_MS; // Use constant for health check interval
 
   async loadSettings() {
@@ -34,7 +34,7 @@ class ServerHealthService {
       // Use the proxied /api/health endpoint which works in both dev and Docker
       const response = await fetch('/api/health', {
         method: 'GET',
-        signal: AbortSignal.timeout(10000) // 10 second timeout (increased for heavy operations)
+        signal: AbortSignal.timeout(60000) // 60 second timeout (maximum robustness)
       });
       
       if (response.ok) {

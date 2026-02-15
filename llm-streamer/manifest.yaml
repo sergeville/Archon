@@ -1,0 +1,12 @@
+project:
+  name: Alfred LLM Streamer Integration
+  method: BMAD
+  engine: gemini
+  status: active
+modules:
+  - core
+  - streamable-http
+  - log-aggregator
+ides:
+  - cursor
+  - gemini-cli

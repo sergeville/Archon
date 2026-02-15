@@ -58,6 +58,7 @@ def register_project_tools(mcp: FastMCP):
         ctx: Context,
         project_id: str | None = None,  # For getting single project
         query: str | None = None,  # Search capability
+        status: str | None = None, # Filter by status
         page: int = 1,
         per_page: int = DEFAULT_PAGE_SIZE,
     ) -> str:
@@ -67,6 +68,7 @@ def register_project_tools(mcp: FastMCP):
         Args:
             project_id: Get specific project by ID (returns full details)
             query: Keyword search in title/description
+            status: Filter by lifecycle status (e.g., "Active", "In Progress", "Archived")
             page: Page number for pagination  
             per_page: Items per page (default: 10)
         
@@ -118,6 +120,14 @@ def register_project_tools(mcp: FastMCP):
                             or query_lower in p.get("description", "").lower()
                         ]
                     
+                    # Apply status filter if provided
+                    if status:
+                        status_lower = status.lower()
+                        projects = [
+                            p for p in projects
+                            if p.get("status", "").lower() == status_lower
+                        ]
+                    
                     # Apply pagination
                     start_idx = (page - 1) * per_page
                     end_idx = start_idx + per_page
@@ -152,6 +162,9 @@ def register_project_tools(mcp: FastMCP):
         title: str | None = None,
         description: str | None = None,
         github_repo: str | None = None,
+        pinned: bool | None = None,
+        archived: bool | None = None,
+        status: str | None = None,
     ) -> str:
         """
         Manage projects (consolidated: create/update/delete).
@@ -162,10 +175,14 @@ def register_project_tools(mcp: FastMCP):
             title: Project title (required for create)
             description: Project goals and scope
             github_repo: GitHub URL (e.g. "https://github.com/org/repo")
+            pinned: Pin project to top (create/update)
+            archived: Archive project (update only)
+            status: Lifecycle status (e.g., "Active", "In Progress", "Archived")
         
         Examples:
-            manage_project("create", title="Auth System")
-            manage_project("update", project_id="p-1", description="Updated")
+            manage_project("create", title="Auth System", pinned=True)
+            manage_project("update", project_id="p-1", description="Updated", archived=True)
+            manage_project("update", project_id="p-1", status="In Progress")
             manage_project("delete", project_id="p-1")
         
         Returns: {success: bool, project?: object, message: string}
@@ -182,13 +199,19 @@ def register_project_tools(mcp: FastMCP):
                             "title required for create"
                         )
                     
+                    payload = {
+                        "title": title,
+                        "description": description or "",
+                        "github_repo": github_repo
+                    }
+                    if pinned is not None:
+                        payload["pinned"] = pinned
+                    if status is not None:
+                        payload["status"] = status
+                    
                     response = await client.post(
                         urljoin(api_url, "/api/projects"),
-                        json={
-                            "title": title,
-                            "description": description or "",
-                            "github_repo": github_repo
-                        }
+                        json=payload
                     )
                     
                     if response.status_code == 200:
@@ -270,6 +293,12 @@ def register_project_tools(mcp: FastMCP):
                         update_data["description"] = description
                     if github_repo is not None:
                         update_data["github_repo"] = github_repo
+                    if pinned is not None:
+                        update_data["pinned"] = pinned
+                    if archived is not None:
+                        update_data["archived"] = archived
+                    if status is not None:
+                        update_data["status"] = status
                     
                     if not update_data:
                         return MCPErrorFormatter.format_error(

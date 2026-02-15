@@ -63,6 +63,12 @@ class CredentialService:
                     "SUPABASE_URL and SUPABASE_SERVICE_KEY must be set in environment variables"
                 )
 
+            # Robustness fix: Ensure URL is the base Supabase URL, not the PostgREST URL
+            if url.endswith("/rest/v1"):
+                url = url[:-8]
+            elif url.endswith("/rest/v1/"):
+                url = url[:-9]
+
             try:
                 # Initialize with standard Supabase client - no need for custom headers
                 self._supabase = create_client(url, key)

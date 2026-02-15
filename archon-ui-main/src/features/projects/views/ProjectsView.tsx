@@ -42,13 +42,13 @@ const itemVariants = {
 };
 
 export function ProjectsView({ className = "", "data-id": dataId }: ProjectsViewProps) {
-  const { projectId } = useParams();
+  const { projectId, docId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   // State management
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [activeTab, setActiveTab] = useState("tasks");
+  const [activeTab, setActiveTab] = useState(docId ? "docs" : "tasks");
   const [layoutMode, setLayoutMode] = useState<"horizontal" | "sidebar">("horizontal");
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -105,6 +105,12 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
   );
 
   // Auto-select project based on URL or default to leftmost
+  useEffect(() => {
+    if (docId) {
+      setActiveTab("docs");
+    }
+  }, [docId]);
+
   useEffect(() => {
     if (!sortedProjects.length) return;
 

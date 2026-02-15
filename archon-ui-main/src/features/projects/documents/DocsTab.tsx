@@ -1,5 +1,6 @@
 import { FileText, Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { DeleteConfirmModal } from "../../ui/components/DeleteConfirmModal";
 import { Button, Input } from "../../ui/primitives";
 import { AddDocumentModal } from "./components/AddDocumentModal";
@@ -23,6 +24,7 @@ interface DocsTabProps {
  */
 export const DocsTab = ({ project }: DocsTabProps) => {
   const projectId = project?.id || "";
+  const { docId } = useParams();
 
   // Fetch documents from project's docs field
   const { data: documents = [], isLoading } = useProjectDocuments(projectId);
@@ -96,12 +98,23 @@ export const DocsTab = ({ project }: DocsTabProps) => {
     setDocumentToDelete(null);
   }, []);
 
-  // Auto-select first document when documents load
+  // Auto-select first document or docId from URL when documents load
   useEffect(() => {
-    if (documents.length > 0 && !selectedDocument) {
-      setSelectedDocument(documents[0]);
+    if (documents.length > 0) {
+      if (docId) {
+        const doc = documents.find((d) => d.id === docId);
+        if (doc) {
+          setSelectedDocument(doc);
+          return;
+        }
+      }
+      
+      if (!selectedDocument) {
+        setSelectedDocument(documents[0]);
+      }
     }
-  }, [documents, selectedDocument]);
+  }, [documents, docId, selectedDocument]);
+
 
   // Update selected document if it was updated
   useEffect(() => {

@@ -307,7 +307,7 @@ services:
     volumes:
       - ./llm-streamer:/app
       - /var/run/docker.sock:/var/run/docker.sock
-    command: sh -c "pip install -q -r requirements.txt && python -u archon_log_collector.py"
+    command: sh -c "pip install -q -r requirements.txt && python -u alfred_log_collector.py"
     depends_on:
       llm-streamer-redis:
         condition: service_healthy

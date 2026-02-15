@@ -70,7 +70,7 @@ class WorkflowOrchestrator:
         """
         # Default commands if not provided
         if selected_commands is None:
-            selected_commands = ["create-branch", "planning", "execute", "prp-review", "commit", "create-pr"]
+            selected_commands = ["create-branch", "agile-planning", "execute", "prp-review", "commit", "create-pr"]
 
         # Bind work order context for structured logging
         bind_work_order_context(agent_work_order_id)
@@ -123,6 +123,7 @@ class WorkflowOrchestrator:
             command_map = {
                 "create-branch": workflow_operations.run_create_branch_step,
                 "planning": workflow_operations.run_planning_step,
+                "agile-planning": workflow_operations.run_agile_planning_step,
                 "execute": workflow_operations.run_execute_step,
                 "commit": workflow_operations.run_commit_step,
                 "create-pr": workflow_operations.run_create_pr_step,

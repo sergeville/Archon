@@ -36,6 +36,7 @@ from .api_routes.version_api import router as version_router
 # Import modular API routers
 from .api_routes.settings_api import router as settings_router
 from .api_routes.sessions_api import router as sessions_router
+from .api_routes.patterns_api import router as patterns_router
 
 # Import Logfire configuration
 from .config.logfire_config import api_logger, setup_logfire
@@ -206,6 +207,7 @@ app.include_router(ollama_router)
 app.include_router(openrouter_router)
 app.include_router(projects_router)
 app.include_router(sessions_router)
+app.include_router(patterns_router)
 app.include_router(progress_router)
 app.include_router(agent_chat_router)
 app.include_router(agent_work_orders_router)  # Proxy to independent agent work orders service
