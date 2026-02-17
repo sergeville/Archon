@@ -8,7 +8,8 @@
 import { useState } from "react";
 import { Activity, Filter, Search, TrendingUp } from "lucide-react";
 import { useSessions } from "../hooks/useSessionQueries";
-import { SessionRow } from "../components/SessionRow";
+import { useSessionEvents } from "../hooks/useSessionEvents";
+import { SessionRow, SessionDetailModal } from "../components";
 import { Button } from "@/features/ui/primitives/button";
 import { Input } from "@/features/ui/primitives/input";
 import { Select } from "@/features/ui/primitives/select";
@@ -18,6 +19,9 @@ export function SessionsView() {
   const [filters, setFilters] = useState<SessionFilterOptions>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+
+  // Real-time session updates via SSE
+  useSessionEvents();
 
   const { data: sessions = [], isLoading, error } = useSessions(filters);
 
@@ -199,21 +203,12 @@ export function SessionsView() {
         </div>
       )}
 
-      {/* Session Detail Modal - TODO: Create SessionDetailModal component */}
+      {/* Session Detail Modal */}
       {selectedSessionId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-2xl w-full mx-4">
-            <p className="text-white">Session Detail View (Coming Soon)</p>
-            <p className="text-gray-400 text-sm mt-2">Session ID: {selectedSessionId}</p>
-            <Button
-              onClick={() => setSelectedSessionId(null)}
-              className="mt-4"
-              variant="outline"
-            >
-              Close
-            </Button>
-          </div>
-        </div>
+        <SessionDetailModal
+          sessionId={selectedSessionId}
+          onClose={() => setSelectedSessionId(null)}
+        />
       )}
     </div>
   );
