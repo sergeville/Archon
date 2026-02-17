@@ -1,9 +1,9 @@
 # Archon MCP Tools Inventory
 
-**Date:** 2026-02-14
+**Date:** 2026-02-17 (Updated)
 **Project:** Shared Memory System Implementation
 **Task:** Task 5 - Document Current MCP Tool Inventory
-**Status:** Complete
+**Status:** Updated - Reflects Consolidated Tools Refactor
 
 ---
 
@@ -11,9 +11,14 @@
 
 This document catalogs all Archon MCP tools available through the MCP_DOCKER gateway in Claude Code. Tools are categorized by function and include parameter specifications, return types, and recommended use cases.
 
+**Recent Changes (2026-02-17):**
+- Task management refactored from 7 individual tools to 2 consolidated tools
+- Removed deprecated individual CRUD operations
+- Updated with current `find_tasks` and `manage_task` implementations
+
 ## Tool Categories
 
-1. [Task Management](#task-management) (7 tools)
+1. [Task Management](#task-management) (4 tools - consolidated)
 2. [GitHub Integration](#github-integration) (40+ tools)
 3. [MCP Server Management](#mcp-server-management) (6 tools)
 4. [Code Mode](#code-mode) (1 tool)
@@ -116,31 +121,99 @@ This document catalogs all Archon MCP tools available through the MCP_DOCKER gat
 
 ---
 
-### 3. archon_add_task
+### 3. find_tasks (Consolidated)
 
-**Status:** ❌ Broken (Missing project_id parameter)
-**Function:** Create new tasks
+**Status:** ✅ Working
+**Function:** Unified search, list, and get operations for tasks
 
-**Expected Parameters:**
+**Parameters:**
 ```typescript
 {
-  project_id: string,              // MISSING - causes 422 error
-  title: string,                   // Required
-  description?: string,            // Optional
-  status?: "todo" | "doing" | "done",
-  priority?: "low" | "medium" | "high",
-  assignee?: string
+  query?: string,           // Keyword search in title/description/feature
+  task_id?: string,         // Get specific task by ID (full details)
+  filter_by?: "status" | "project" | "assignee",
+  filter_value?: string,    // Filter value (e.g., "todo", "doing")
+  project_id?: string,      // Project UUID for filtering
+  include_closed?: boolean, // Include done tasks (default: true)
+  page?: number,            // Page number (default: 1)
+  per_page?: number        // Items per page (default: 10)
 }
 ```
 
-**Current Parameters (Incomplete):**
+**Returns:**
+```typescript
+// For single task (task_id provided)
+{
+  success: boolean,
+  task: {
+    id: string,
+    title: string,
+    description: string,
+    status: string,
+    priority: string,
+    assignee: string,
+    // ... full task details
+  }
+}
+
+// For list/search
+{
+  success: boolean,
+  tasks: Array<Task>,       // Optimized payloads (truncated descriptions)
+  total_count: number,
+  count: number,
+  query?: string           // Echo search query if provided
+}
+```
+
+**Use Cases:**
+- Search tasks by keywords: `find_tasks(query="auth")`
+- Get single task: `find_tasks(task_id="uuid")`
+- Filter by status: `find_tasks(filter_by="status", filter_value="todo")`
+- Filter by project: `find_tasks(filter_by="project", filter_value="project-uuid")`
+- Filter by assignee: `find_tasks(filter_by="assignee", filter_value="claude")`
+- Paginated lists: `find_tasks(page=2, per_page=20)`
+
+**Examples:**
+```json
+// Search
+{"query": "database migration"}
+
+// Get single task
+{"task_id": "b27ef178-2be1-4fc7-b3f2-fb23d7eca7e0"}
+
+// Filter todo tasks
+{"filter_by": "status", "filter_value": "todo"}
+
+// Project-specific tasks
+{"filter_by": "project", "filter_value": "project-uuid"}
+```
+
+---
+
+### 4. manage_task (Consolidated)
+
+**Status:** ✅ Working
+**Function:** Unified create, update, and delete operations for tasks
+
+**Parameters:**
 ```typescript
 {
-  title: string,
+  action: "create" | "update" | "delete",  // Required: operation type
+
+  // For create (required)
+  project_id?: string,      // Required for create
+  title?: string,           // Required for create
+
+  // For update/delete (required)
+  task_id?: string,         // Required for update/delete
+
+  // Optional fields (create/update)
   description?: string,
-  status?: string,
-  priority?: string,
-  assignee?: string
+  status?: "todo" | "doing" | "review" | "done",
+  assignee?: string,        // Default: "User"
+  task_order?: number,      // Priority 0-100
+  feature?: string         // Feature label for grouping
 }
 ```
 
@@ -148,142 +221,53 @@ This document catalogs all Archon MCP tools available through the MCP_DOCKER gat
 ```typescript
 {
   success: boolean,
-  message?: string,
-  task?: object
+  task?: object,            // Updated/created task (optimized)
+  task_id?: string,         // For create operations
+  message: string
 }
 ```
 
-**Issue:** Missing `project_id` parameter causes HTTP 422 validation error
+**Use Cases:**
+- Create task: `manage_task("create", project_id="uuid", title="New task")`
+- Update status: `manage_task("update", task_id="uuid", status="doing")`
+- Update assignee: `manage_task("update", task_id="uuid", assignee="claude")`
+- Delete task: `manage_task("delete", task_id="uuid")`
+- Update multiple fields: `manage_task("update", task_id="uuid", status="done", assignee="User")`
 
-**Workaround:** Use HTTP API
-```bash
-curl -X POST "http://localhost:8181/api/tasks" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "project_id": "uuid",
-    "title": "Task Title",
-    "description": "Description",
-    "status": "todo",
-    "priority": "medium",
-    "assignee": "claude"
-  }'
-```
-
----
-
-### 4. archon_update_task
-
-**Status:** ❌ Broken (405 Method Not Allowed)
-**Function:** Update existing task fields
-
-**Parameters:**
-```typescript
+**Examples:**
+```json
+// Create
 {
-  task_id: string,
-  title?: string,
-  description?: string,
-  status?: string,
-  priority?: string,
-  assignee?: string
+  "action": "create",
+  "project_id": "p-123",
+  "title": "Implement authentication",
+  "description": "Add JWT-based auth",
+  "assignee": "claude",
+  "status": "todo"
 }
-```
 
-**Returns:**
-```typescript
+// Update
 {
-  success: boolean,
-  message?: string,
-  task?: object
+  "action": "update",
+  "task_id": "t-456",
+  "status": "doing",
+  "assignee": "claude"
 }
-```
 
-**Issue:** HTTP 405 Method Not Allowed - endpoint routing issue
-
-**Workaround:** Use HTTP API
-```bash
-curl -X PUT "http://localhost:8181/api/tasks/{task_id}" \
-  -H "Content-Type: application/json" \
-  -d '{"status": "doing", "assignee": "claude"}'
-```
-
----
-
-### 5. archon_start_task
-
-**Status:** ❌ Broken (405 Method Not Allowed)
-**Function:** Mark task as "doing" (shortcut for update)
-
-**Parameters:**
-```typescript
+// Delete
 {
-  task_id: string
+  "action": "delete",
+  "task_id": "t-789"
 }
 ```
 
-**Returns:**
-```typescript
-{
-  success: boolean,
-  message?: string,
-  task?: object
-}
-```
-
-**Issue:** Same 405 error as archon_update_task
-
-**Workaround:** Use HTTP API with `status: "doing"`
-
----
-
-### 6. archon_complete_task
-
-**Status:** ❌ Broken (405 Method Not Allowed)
-**Function:** Mark task as complete (shortcut for update)
-
-**Parameters:**
-```typescript
-{
-  task_id: string
-}
-```
-
-**Returns:**
-```typescript
-{
-  success: boolean,
-  message?: string,
-  task?: object
-}
-```
-
-**Issue:** Same 405 error as archon_update_task
-
-**Workaround:** Use HTTP API with `status: "done"`
-
----
-
-### 7. archon_archive_task
-
-**Status:** ⚠️ Untested (likely 405 error)
-**Function:** Archive/soft-delete tasks
-
-**Parameters:**
-```typescript
-{
-  task_id: string
-}
-```
-
-**Returns:**
-```typescript
-{
-  success: boolean,
-  message?: string,
-  task?: object
-}
-```
-
-**Recommendation:** Test before use, likely needs HTTP API workaround
+**Migration Notes:**
+This tool replaces the deprecated individual operations:
+- ❌ `archon_add_task` → ✅ `manage_task(action="create")`
+- ❌ `archon_update_task` → ✅ `manage_task(action="update")`
+- ❌ `archon_start_task` → ✅ `manage_task(action="update", status="doing")`
+- ❌ `archon_complete_task` → ✅ `manage_task(action="update", status="done")`
+- ❌ `archon_archive_task` → ✅ `manage_task(action="delete")`
 
 ---
 
@@ -657,24 +641,33 @@ const updated = await archon_get_task({task_id: taskToUpdate.id})
 
 ## Conclusion
 
-**Current MCP Tool Status:**
-- **7 Archon task tools** identified
-- **2 working** (list, get)
-- **5 broken** (add, update, start, complete, archive)
-- **40+ GitHub tools** available
-- **6 MCP management tools** working
+**Current MCP Tool Status (Updated 2026-02-17):**
+- **4 Archon task tools** - All working ✅
+  - `archon_list_tasks` (legacy, still functional)
+  - `archon_get_task` (legacy, still functional)
+  - `find_tasks` (consolidated search/list/get)
+  - `manage_task` (consolidated create/update/delete)
+- **40+ GitHub tools** - All available
+- **6 MCP management tools** - All working
 
-**Recommendation for Phase 1-6:**
-- Use working MCP tools for queries
-- Use HTTP API for mutations
-- Plan new tools for Phase 2-4
-- Fix broken tools post-implementation
+**Tool Consolidation:**
+- Replaced 7 individual tools with 4 streamlined tools
+- Eliminated HTTP 405/422 errors through proper refactoring
+- Improved efficiency with optimized payloads (truncated descriptions, count fields)
+- Better pagination support (default 10 items vs previous 50)
 
-**This inventory satisfies Task 5 requirements** and provides foundation for Phase 2-6 tool development.
+**Recommendations:**
+- ✅ Use new consolidated tools (`find_tasks`, `manage_task`) for all operations
+- ✅ Legacy tools (`archon_list_tasks`, `archon_get_task`) remain functional for backward compatibility
+- 🚀 Next: Implement session memory tools for Phase 2
+- 📝 Pattern to follow: Consolidated tools with action parameters
+
+**This inventory satisfies Task 5 requirements** and reflects current production implementation.
 
 ---
 
 **Document Created By:** Claude (Archon Agent)
+**Last Updated:** 2026-02-17
 **Task ID:** 228609d2-7df2-4ecd-85d0-a5cefef60595
 **Project:** Shared Memory System Implementation (b231255f-6ed9-4440-80de-958bcf7b4f9f)
-**Next Task:** Task 6 - Map Existing Tools to Memory Layers
+**Status:** Updated - Tool refactor complete
