@@ -36,6 +36,7 @@ features/            # Vertical slice architecture
 ├── projects/        # Project management
 │   ├── tasks/       # Task sub-feature
 │   └── documents/   # Document sub-feature
+├── sessions/        # Session memory (Phase 2)
 ├── progress/        # Operation tracking
 ├── mcp/             # MCP integration
 ├── shared/          # Cross-feature utilities
@@ -56,6 +57,20 @@ components/          # Legacy components (migrating)
 **Backend**: `python/src/server/services/project_*_service.py`
 **Frontend**: `archon-ui-main/src/features/projects/`
 **Features**: Projects, tasks, documents, version history
+
+### Session Management (Phase 2)
+**Backend**: `python/src/server/services/session_service.py`
+**Frontend**: `archon-ui-main/src/features/sessions/`
+**API**: `python/src/server/api_routes/sessions_api.py`
+**MCP Tools**: `python/src/mcp_server/features/sessions/`
+**Features**:
+- Agent work session tracking
+- Event logging with embeddings
+- Semantic search across sessions
+- AI-powered session summarization
+- Context retrieval for session resumption
+
+**Status**: Backend 90% complete (12 endpoints, 5 MCP tools, 15 service methods), Frontend integration pending
 
 ### MCP Server
 **Location**: `python/src/mcp_server/`
@@ -82,6 +97,9 @@ Pattern: `{METHOD} /api/{resource}/{id?}/{sub-resource?}`
 - `/api/projects/{id}/tasks` - Nested resources
 - `/api/knowledge/search` - RAG search
 - `/api/progress/{id}` - Operation status
+- `/api/sessions` - Session management (Phase 2)
+- `/api/sessions/{id}/events` - Session events
+- `/api/sessions/search` - Semantic session search
 
 ### Service Layer
 **Pattern**: `python/src/server/services/{feature}_service.py`
@@ -125,9 +143,11 @@ features/{feature}/
 - `sources` - Knowledge sources
 - `documents` - Document chunks with embeddings
 - `code_examples` - Extracted code
-- `archon_projects` - Projects
-- `archon_tasks` - Tasks
+- `archon_projects` - Projects (with embedding column)
+- `archon_tasks` - Tasks (with embedding column)
 - `archon_document_versions` - Version history
+- `archon_sessions` - Agent work sessions (Phase 2)
+- `archon_session_events` - Session event logs (Phase 2)
 
 ## Key Architectural Decisions
 
@@ -171,13 +191,32 @@ Single Docker Compose deployment with all services.
 ### Feature Flags
 Controlled via Settings UI. Projects feature can be disabled.
 
-## Recent Refactors (Phases 1-5)
+## Recent Updates
 
+### Query System Refactors (2025)
 1. **Removed ETag cache layer** - Browser handles HTTP caching
 2. **Standardized query keys** - Each feature owns its keys
 3. **Fixed optimistic updates** - UUID-based with nanoid
 4. **Configured deduplication** - Centralized QueryClient
 5. **Removed manual invalidations** - Trust backend consistency
+
+### MCP Tools Consolidation (2026-02-17)
+- Refactored from 7 individual task tools to 4 consolidated tools
+- Pattern: `find_*` (search/list/get) and `manage_*` (create/update/delete)
+- Applied to task and session management
+- Improved efficiency with optimized payloads
+
+### Phase 2: Session Memory System (2026-02 - In Progress)
+**Status**: 75% complete (backend done, frontend pending)
+- ✅ Database schema with vector embeddings
+- ✅ SessionService with 15 methods
+- ✅ 12 REST API endpoints
+- ✅ 5 MCP tools (consolidated pattern)
+- ✅ AI-powered summarization (PydanticAI)
+- ⚠️ Semantic search (migration 003 pending)
+- ❌ Frontend integration (0%)
+
+See `docs/PHASE_2_ACTUAL_STATUS.md` for detailed status
 
 ## Performance Optimizations
 

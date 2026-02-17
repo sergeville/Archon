@@ -45,6 +45,7 @@ Each feature maintains its own query keys:
 
 - **Projects**: `archon-ui-main/src/features/projects/hooks/useProjectQueries.ts` (projectKeys)
 - **Tasks**: `archon-ui-main/src/features/projects/tasks/hooks/useTaskQueries.ts` (taskKeys)
+- **Sessions**: `archon-ui-main/src/features/sessions/hooks/useSessionQueries.ts` (sessionKeys) - Phase 2
 - **Knowledge**: `archon-ui-main/src/features/knowledge/hooks/useKnowledgeQueries.ts` (knowledgeKeys)
 - **Progress**: `archon-ui-main/src/features/progress/hooks/useProgressQueries.ts` (progressKeys)
 - **MCP**: `archon-ui-main/src/features/mcp/hooks/useMcpQueries.ts` (mcpKeys)
@@ -78,6 +79,7 @@ Backend endpoints follow RESTful patterns:
 
 - **Knowledge**: `python/src/server/api_routes/knowledge_api.py`
 - **Projects**: `python/src/server/api_routes/projects_api.py`
+- **Sessions**: `python/src/server/api_routes/sessions_api.py` (Phase 2)
 - **Progress**: `python/src/server/api_routes/progress_api.py`
 - **MCP**: `python/src/server/api_routes/mcp_api.py`
 

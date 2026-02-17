@@ -31,6 +31,18 @@ From `python/src/server/api_routes/`:
 - `/api/projects/{project_id}/docs` - Project documents
 - `/api/projects/{project_id}/versions` - Version history
 
+**Sessions** (`sessions_api.py`) - Phase 2:
+- `/api/sessions` - Session CRUD
+- `/api/sessions/{session_id}` - Get session details
+- `/api/sessions/{session_id}/end` - End session
+- `/api/sessions/{session_id}/events` - Session events
+- `/api/sessions/events` - Log event
+- `/api/sessions/search` - Semantic search
+- `/api/sessions/search/all` - Unified memory search
+- `/api/sessions/agents/{agent}/last` - Last session for agent
+- `/api/sessions/agents/{agent}/recent` - Recent sessions
+- `/api/sessions/{session_id}/summarize` - AI summarization
+
 **Knowledge** (`knowledge_api.py`):
 - `/api/knowledge/sources` - Knowledge sources
 - `/api/knowledge/crawl` - Start web crawl
@@ -86,6 +98,7 @@ Actual patterns from service files:
 ### Service File Locations
 - **Projects**: `archon-ui-main/src/features/projects/services/projectService.ts`
 - **Tasks**: `archon-ui-main/src/features/projects/tasks/services/taskService.ts`
+- **Sessions**: `archon-ui-main/src/features/sessions/services/sessionService.ts` (Phase 2 - pending frontend)
 - **Knowledge**: `archon-ui-main/src/features/knowledge/services/knowledgeService.ts`
 - **Progress**: `archon-ui-main/src/features/progress/services/progressService.ts`
 
