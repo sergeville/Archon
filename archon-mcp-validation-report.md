@@ -272,7 +272,7 @@ docker compose logs archon-mcp | grep "registered"
 
 ### Configuration Files
 - **Claude Desktop Config**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Environment Variables**: `/Users/sergevilleneuve/Documents/Archon/.env`
+- **Environment Variables**: `~/Documents/Archon/.env`
 
 ### MCP Server Code
 - **Main Server**: `python/src/mcp_server/mcp_server.py`

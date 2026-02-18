@@ -35,7 +35,7 @@ class SessionSummary(BaseModel):
 
 # Initialize the PydanticAI agent
 session_summarizer = Agent(
-    "openai:gpt-4o-mini",  # Using gpt-4o-mini for cost efficiency
+    "anthropic:claude-sonnet-4-5-20250929",  # Using Claude Sonnet 4.5 for best quality
     result_type=SessionSummary,
     system_prompt="""
     You are a session summarization agent for Archon, a multi-agent knowledge management system.

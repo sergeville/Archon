@@ -24,7 +24,7 @@ Before running this migration, verify:
 
 ```bash
 # Read the migration file
-cat /Users/sergevilleneuve/Documents/Projects/Archon/migration/002_session_memory.sql
+cat ~/Documents/Projects/Archon/migration/002_session_memory.sql
 ```
 
 ### Step 2: Open Supabase Dashboard
@@ -114,7 +114,7 @@ export DATABASE_URL="postgresql://postgres:[PASSWORD]@[HOST]:5432/postgres"
 
 ```bash
 # Navigate to Archon directory
-cd /Users/sergevilleneuve/Documents/Projects/Archon
+cd ~/Documents/Projects/Archon
 
 # Run migration
 psql "$DATABASE_URL" -f migration/002_session_memory.sql

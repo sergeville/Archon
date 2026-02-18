@@ -11,12 +11,13 @@ from typing import Any
 
 from src.server.utils import get_supabase_client
 from ...utils.embeddings import get_embedding_service
+from ...utils.event_publisher import EventPublisher
 
 from ...config.logfire_config import get_logger
 
 logger = get_logger(__name__)
 
-# Task updates are handled via polling - no broadcasting needed
+# Task events are published to Redis for whiteboard integration
 
 
 class TaskService:
@@ -136,6 +137,24 @@ class TaskService:
             if response.data:
                 task = response.data[0]
 
+                # Publish task creation event to Redis for whiteboard integration
+                try:
+                    event_pub = EventPublisher()
+                    await event_pub.publish_task_event(
+                        event_type="task.created",
+                        task_id=task["id"],
+                        data={
+                            "title": task["title"],
+                            "assignee": task["assignee"],
+                            "priority": task["priority"],
+                            "status": task["status"],
+                            "project_id": task["project_id"]
+                        },
+                        agent=task["assignee"]
+                    )
+                    logger.debug(f"Published task.created event for task {task['id']}")
+                except Exception as e:
+                    logger.warning(f"Failed to publish task.created event: {e}")
 
                 return True, {
                     "task": {
@@ -369,6 +388,15 @@ class TaskService:
             Tuple of (success, result_dict)
         """
         try:
+            # Get current task for event detection
+            old_task_response = (
+                self.supabase_client.table("archon_tasks")
+                .select("status, assignee, title, project_id")
+                .eq("id", task_id)
+                .execute()
+            )
+            old_task = old_task_response.data[0] if old_task_response.data else None
+
             # Build update data
             update_data = {"updated_at": datetime.now().isoformat()}
 
@@ -414,6 +442,58 @@ class TaskService:
             if response.data:
                 task = response.data[0]
 
+                # Publish task update events to Redis for whiteboard integration
+                try:
+                    event_pub = EventPublisher()
+
+                    # Check if status changed
+                    if old_task and "status" in update_fields and old_task["status"] != task["status"]:
+                        await event_pub.publish_task_event(
+                            event_type="task.status_changed",
+                            task_id=task_id,
+                            data={
+                                "old_status": old_task["status"],
+                                "new_status": task["status"],
+                                "title": task["title"],
+                                "assignee": task["assignee"],
+                                "project_id": task["project_id"]
+                            },
+                            agent=task["assignee"]
+                        )
+                        logger.debug(f"Published task.status_changed event for task {task_id}")
+
+                    # Check if assignee changed
+                    if old_task and "assignee" in update_fields and old_task["assignee"] != task["assignee"]:
+                        await event_pub.publish_task_event(
+                            event_type="task.assigned",
+                            task_id=task_id,
+                            data={
+                                "old_assignee": old_task["assignee"],
+                                "new_assignee": task["assignee"],
+                                "title": task["title"],
+                                "status": task["status"],
+                                "project_id": task["project_id"]
+                            },
+                            agent=task["assignee"]
+                        )
+                        logger.debug(f"Published task.assigned event for task {task_id}")
+
+                    # Generic update event for other fields
+                    if not ("status" in update_fields or "assignee" in update_fields):
+                        await event_pub.publish_task_event(
+                            event_type="task.updated",
+                            task_id=task_id,
+                            data={
+                                "title": task["title"],
+                                "updated_fields": list(update_fields.keys()),
+                                "project_id": task["project_id"]
+                            },
+                            agent=task.get("assignee")
+                        )
+                        logger.debug(f"Published task.updated event for task {task_id}")
+
+                except Exception as e:
+                    logger.warning(f"Failed to publish task update event: {e}")
 
                 return True, {"task": task, "message": "Task updated successfully"}
             else:

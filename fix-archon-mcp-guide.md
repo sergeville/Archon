@@ -91,7 +91,7 @@ find ~/Library -name "claude_desktop_config.json" 2>/dev/null
 
 ### If the archon-mcp container isn't running:
 ```bash
-cd /Users/sergevilleneuve/Documents/Archon
+cd ~/Documents/Archon
 docker compose up -d archon-mcp
 ```
 

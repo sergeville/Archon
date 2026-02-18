@@ -37,6 +37,7 @@ from .api_routes.version_api import router as version_router
 from .api_routes.settings_api import router as settings_router
 from .api_routes.sessions_api import router as sessions_router
 from .api_routes.patterns_api import router as patterns_router
+from .api_routes.whiteboard_api import router as whiteboard_router
 
 # Import Logfire configuration
 from .config.logfire_config import api_logger, setup_logfire
@@ -122,6 +123,14 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             api_logger.warning(f"Could not start auto-archive service: {e}")
 
+        # Start Event Listener Service (for whiteboard integration)
+        try:
+            from .services.event_listener_service import get_event_listener
+            event_listener = get_event_listener()
+            await event_listener.start()
+            api_logger.info("✅ Event listener service started")
+        except Exception as e:
+            api_logger.warning(f"Could not start event listener service: {e}")
 
         # MCP Client functionality removed from architecture
         # Agents now use MCP tools directly
@@ -147,6 +156,15 @@ async def lifespan(app: FastAPI):
             await auto_archive_service.stop()
         except Exception:
             pass
+
+        # Stop Event Listener Service
+        try:
+            from .services.event_listener_service import get_event_listener
+            event_listener = get_event_listener()
+            await event_listener.stop()
+        except Exception:
+            pass
+
         # MCP Client cleanup not needed
 
         # Cleanup crawling context
@@ -207,6 +225,7 @@ app.include_router(ollama_router)
 app.include_router(openrouter_router)
 app.include_router(projects_router)
 app.include_router(sessions_router)
+app.include_router(whiteboard_router)
 app.include_router(patterns_router)
 app.include_router(progress_router)
 app.include_router(agent_chat_router)

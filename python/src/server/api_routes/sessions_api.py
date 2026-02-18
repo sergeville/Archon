@@ -17,6 +17,7 @@ from pydantic import BaseModel
 
 from ..config.logfire_config import get_logger
 from ..services.session_service import SessionService
+from ..utils.event_publisher import EventPublisher
 
 logger = get_logger(__name__)
 
@@ -71,6 +72,23 @@ async def create_session(request: CreateSessionRequest):
             context=request.context or {},
             metadata=request.metadata or {}
         )
+
+        # Publish session creation event to Redis for whiteboard integration
+        try:
+            event_pub = EventPublisher()
+            await event_pub.publish_session_event(
+                event_type="session.started",
+                session_id=session["id"],
+                agent=request.agent,
+                data={
+                    "project_id": request.project_id,
+                    "started_at": session.get("started_at")
+                }
+            )
+            logger.debug(f"Published session.started event for session {session['id']}")
+        except Exception as e:
+            logger.warning(f"Failed to publish session.started event: {e}")
+
         return {
             "message": "Session created successfully",
             "session": session
@@ -174,6 +192,23 @@ async def end_session(session_id: str, request: EndSessionRequest):
                 status_code=http_status.HTTP_404_NOT_FOUND,
                 detail=f"Session {session_id} not found"
             )
+
+        # Publish session ended event to Redis for whiteboard integration
+        try:
+            event_pub = EventPublisher()
+            await event_pub.publish_session_event(
+                event_type="session.ended",
+                session_id=session_id,
+                agent=session.get("agent", "unknown"),
+                data={
+                    "ended_at": session.get("ended_at"),
+                    "summary": request.summary,
+                    "project_id": session.get("project_id")
+                }
+            )
+            logger.debug(f"Published session.ended event for session {session_id}")
+        except Exception as e:
+            logger.warning(f"Failed to publish session.ended event: {e}")
 
         return {
             "message": "Session ended successfully",

@@ -70,8 +70,24 @@ async def event_generator():
         await pubsub.aclose()
         await redis.aclose()
 
+async def session_event_generator():
+    """Stream Claude Code session events in real-time"""
+    redis = aioredis.from_url(REDIS_URL, decode_responses=True)
+    pubsub = redis.pubsub()
+    await pubsub.subscribe("claude-sessions")
+    try:
+        async for msg in pubsub.listen():
+            if msg["type"] == "message":
+                yield f"data: {msg['data']}\\n\\n"
+    finally:
+        await pubsub.aclose()
+        await redis.aclose()
+
 @app.get("/")
 async def index(): return HTMLResponse(HTML_CONTENT)
 
 @app.get("/stream")
 async def stream(): return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+@app.get("/stream/sessions")
+async def stream_sessions(): return StreamingResponse(session_event_generator(), media_type="text/event-stream")

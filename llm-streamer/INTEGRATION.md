@@ -64,7 +64,7 @@ LLM_STREAMER_PORT=8000
 
 ### Docker Compose Integration
 
-All services added to `/Users/sergevilleneuve/Documents/Archon/docker-compose.yml`:
+All services added to `~/Documents/Archon/docker-compose.yml`:
 - Connected to Archon's `app-network`
 - Proper health checks configured
 - Dependencies set (collector waits for Archon services)
@@ -74,7 +74,7 @@ All services added to `/Users/sergevilleneuve/Documents/Archon/docker-compose.ym
 ### Start All Services
 
 ```bash
-cd /Users/sergevilleneuve/Documents/Archon
+cd ~/Documents/Archon
 docker-compose up -d
 ```
 
@@ -162,7 +162,7 @@ curl http://localhost:8000 | head -15
 ## Files
 
 ```
-/Users/sergevilleneuve/Documents/Archon/llm-streamer/
+~/Documents/Archon/llm-streamer/
 ├── main.py                    # FastAPI SSE gateway + dashboard
 ├── producer.py                # Test log producer
 ├── archon_log_collector.py    # Archon log collector
@@ -176,7 +176,7 @@ curl http://localhost:8000 | head -15
 ## Source Project
 
 The LLM_streamer project was originally created at:
-- **Location**: `/Users/sergevilleneuve/Documents/MyExperiments/LLM_streamer/`
+- **Location**: `~/Documents/MyExperiments/LLM_streamer/`
 - **Status**: Tracked in EXPERIMENTS.md
 - **Purpose**: Reusable log streaming pattern for LLM backends
 
@@ -233,7 +233,7 @@ It has been integrated into Archon as a subdirectory while maintaining its indep
 
 3. Verify environment variables:
    ```bash
-   grep LLM_STREAMER /Users/sergevilleneuve/Documents/Archon/.env
+   grep LLM_STREAMER ~/Documents/Archon/.env
    ```
 
 ## Status

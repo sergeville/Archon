@@ -24,7 +24,7 @@ Before running this migration, verify:
 
 ```bash
 # Read the migration file
-cat /Users/sergevilleneuve/Documents/Projects/Archon/migration/003_unified_memory_search.sql
+cat ~/Documents/Projects/Archon/migration/003_unified_memory_search.sql
 ```
 
 ### Step 2: Open Supabase Dashboard
@@ -75,7 +75,7 @@ NOTICE: Migration 003: COMPLETE
 
 ```bash
 # Navigate to Archon directory
-cd /Users/sergevilleneuve/Documents/Projects/Archon
+cd ~/Documents/Projects/Archon
 
 # Run migration
 psql "$DATABASE_URL" -f migration/003_unified_memory_search.sql

@@ -13,6 +13,7 @@ import { cn } from "../../ui/primitives/styles";
 import { NewProjectModal } from "../components/NewProjectModal";
 import { ProjectHeader } from "../components/ProjectHeader";
 import { ProjectList } from "../components/ProjectList";
+import { WhiteboardView } from "../components/WhiteboardView";
 import { DocsTab } from "../documents/DocsTab";
 import { projectKeys, useDeleteProject, useProjects, useUpdateProject } from "../hooks/useProjectQueries";
 import { useTaskCounts } from "../tasks/hooks";
@@ -204,6 +205,10 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
   // Staggered entrance animation
   const isVisible = useStaggeredEntrance([1, 2, 3], 0.15);
 
+  // Whiteboard document ID - hide project cards when viewing this document
+  const WHITEBOARD_DOC_ID = "8aeb549b-4cd1-4ff8-adda-87b0afbca9da";
+  const isViewingWhiteboard = docId === WHITEBOARD_DOC_ID;
+
   return (
     <motion.div
       initial="hidden"
@@ -222,17 +227,19 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
 
       {layoutMode === "horizontal" ? (
         <>
-          <ProjectList
-            projects={sortedProjects}
-            selectedProject={selectedProject}
-            taskCounts={taskCounts}
-            isLoading={isLoadingProjects}
-            error={projectsError as Error | null}
-            onProjectSelect={handleProjectSelect}
-            onPinProject={handlePinProject}
-            onDeleteProject={handleDeleteProject}
-            onRetry={() => queryClient.invalidateQueries({ queryKey: projectKeys.lists() })}
-          />
+          {!isViewingWhiteboard && (
+            <ProjectList
+              projects={sortedProjects}
+              selectedProject={selectedProject}
+              taskCounts={taskCounts}
+              isLoading={isLoadingProjects}
+              error={projectsError as Error | null}
+              onProjectSelect={handleProjectSelect}
+              onPinProject={handlePinProject}
+              onDeleteProject={handleDeleteProject}
+              onRetry={() => queryClient.invalidateQueries({ queryKey: projectKeys.lists() })}
+            />
+          )}
 
           {/* Project Details Section */}
           {selectedProject && (
@@ -258,7 +265,13 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
 
               {/* Tab content */}
               <div>
-                {activeTab === "docs" && <DocsTab project={selectedProject} />}
+                {activeTab === "docs" && (
+                  isViewingWhiteboard ? (
+                    <WhiteboardView />
+                  ) : (
+                    <DocsTab project={selectedProject} />
+                  )
+                )}
                 {activeTab === "tasks" && <TasksTab projectId={selectedProject.id} />}
               </div>
             </motion.div>
