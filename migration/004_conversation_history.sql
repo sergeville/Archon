@@ -380,14 +380,12 @@ END $$;
 -- =====================================================
 
 -- Record this migration
-INSERT INTO archon_migrations (version, name, description)
+INSERT INTO archon_migrations (version, migration_name)
 VALUES (
     '004',
-    'conversation_history',
-    'Add conversation_history table for storing LLM conversation messages with vector embeddings. Includes indexes, helper functions, views, and RLS policies for semantic search and message retrieval.'
+    'conversation_history'
 )
-ON CONFLICT (version) DO UPDATE SET
-    description = EXCLUDED.description,
+ON CONFLICT (version, migration_name) DO UPDATE SET
     applied_at = NOW();
 
 -- =====================================================
