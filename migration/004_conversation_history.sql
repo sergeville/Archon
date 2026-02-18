@@ -421,7 +421,7 @@ BEGIN
     3. Create MCP tools for conversation management
     4. Integrate with session management service
 
-    Phase 2 Progress: 85% → 90% (+5%% - conversation tracking)
+    Phase 2 Progress: 85%% → 90%% (+5%% - conversation tracking)
     ========================================
     ';
 END $$;
