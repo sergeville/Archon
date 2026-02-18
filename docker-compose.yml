@@ -17,13 +17,14 @@ services:
     container_name: archon-server
     restart: unless-stopped
     ports:
-      - "${ARCHON_SERVER_PORT:-8181}:${ARCHON_SERVER_PORT:-8181}"
+      - "127.0.0.1:${ARCHON_SERVER_PORT:-8181}:${ARCHON_SERVER_PORT:-8181}"
     environment:
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - LOGFIRE_TOKEN=${LOGFIRE_TOKEN:-}
+      - REDIS_URL=redis://llm-streamer-redis:6379
       - SERVICE_DISCOVERY_MODE=docker_compose
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - ARCHON_SERVER_PORT=${ARCHON_SERVER_PORT:-8181}
@@ -82,7 +83,7 @@ services:
     container_name: archon-mcp
     restart: unless-stopped
     ports:
-      - "${ARCHON_MCP_PORT:-8051}:${ARCHON_MCP_PORT:-8051}"
+      - "127.0.0.1:${ARCHON_MCP_PORT:-8051}:${ARCHON_MCP_PORT:-8051}"
     environment:
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
@@ -133,7 +134,7 @@ services:
     container_name: archon-agents
     restart: unless-stopped
     ports:
-      - "${ARCHON_AGENTS_PORT:-8052}:${ARCHON_AGENTS_PORT:-8052}"
+      - "127.0.0.1:${ARCHON_AGENTS_PORT:-8052}:${ARCHON_AGENTS_PORT:-8052}"
     environment:
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
@@ -173,7 +174,7 @@ services:
     depends_on:
       - archon-server
     ports:
-      - "${AGENT_WORK_ORDERS_PORT:-8053}:${AGENT_WORK_ORDERS_PORT:-8053}"
+      - "127.0.0.1:${AGENT_WORK_ORDERS_PORT:-8053}:${AGENT_WORK_ORDERS_PORT:-8053}"
     environment:
       - ENABLE_AGENT_WORK_ORDERS=true
       - SERVICE_DISCOVERY_MODE=docker_compose
@@ -217,7 +218,7 @@ services:
     container_name: archon-ui
     restart: unless-stopped
     ports:
-      - "${ARCHON_UI_PORT:-3737}:3737"
+      - "127.0.0.1:${ARCHON_UI_PORT:-3737}:3737"
     environment:
       # Don't set VITE_API_URL so frontend uses relative URLs through proxy
       # - VITE_API_URL=http://${HOST:-localhost}:${ARCHON_SERVER_PORT:-8181}
@@ -261,7 +262,7 @@ services:
     restart: unless-stopped
     working_dir: /app
     ports:
-      - "${LLM_STREAMER_PORT:-8000}:8000"
+      - "127.0.0.1:${LLM_STREAMER_PORT:-8000}:8000"
     environment:
       - REDIS_URL=redis://llm-streamer-redis:6379
     networks:
@@ -307,7 +308,7 @@ services:
     volumes:
       - ./llm-streamer:/app
       - /var/run/docker.sock:/var/run/docker.sock
-    command: sh -c "pip install -q -r requirements.txt && python -u alfred_log_collector.py"
+    command: sh -c "pip install -q -r requirements.txt && python -u archon_log_collector_enhanced.py"
     depends_on:
       llm-streamer-redis:
         condition: service_healthy

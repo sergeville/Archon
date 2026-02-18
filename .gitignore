@@ -32,6 +32,20 @@ release-notes-*.md
 # Environment files (keep only .env.example)
 .env*
 !.env.example
+.env.backup*
+.env2
+.env.old
+.env.bak
+
+# Secrets and credentials
+secrets.yaml
+*_secret.txt
+*_key.txt
+*.pem
+*.key
+credentials.json
+token.json
+service-account*.json
 
 # Temporary output files
 out*.txt
