@@ -7,21 +7,21 @@
 
 import { callAPIWithETag } from "../../shared/api/apiClient";
 import type {
-  Session,
   CreateSessionRequest,
   CreateSessionResponse,
-  UpdateSessionRequest,
-  UpdateSessionResponse,
   EndSessionRequest,
   EndSessionResponse,
   LogEventRequest,
   LogEventResponse,
   SearchSessionsRequest,
   SearchSessionsResponse,
-  UnifiedMemorySearchResponse,
-  SummarizeSessionResponse,
+  Session,
   SessionEvent,
   SessionFilterOptions,
+  SummarizeSessionResponse,
+  UnifiedMemorySearchResponse,
+  UpdateSessionRequest,
+  UpdateSessionResponse,
 } from "../types";
 
 export const sessionService = {
@@ -58,9 +58,7 @@ export const sessionService = {
    */
   async getSession(sessionId: string): Promise<Session> {
     try {
-      const response = await callAPIWithETag<{ session: Session }>(
-        `/api/sessions/${sessionId}`
-      );
+      const response = await callAPIWithETag<{ session: Session }>(`/api/sessions/${sessionId}`);
       return response.session;
     } catch (error) {
       console.error(`Failed to get session ${sessionId}:`, error);
@@ -73,9 +71,7 @@ export const sessionService = {
    */
   async getRecentSessions(agent: string, limit: number = 10): Promise<Session[]> {
     try {
-      const response = await callAPIWithETag<{ sessions: Session[] }>(
-        `/api/sessions/recent/${agent}?limit=${limit}`
-      );
+      const response = await callAPIWithETag<{ sessions: Session[] }>(`/api/sessions/recent/${agent}?limit=${limit}`);
       return response.sessions || [];
     } catch (error) {
       console.error(`Failed to get recent sessions for ${agent}:`, error);
@@ -88,9 +84,7 @@ export const sessionService = {
    */
   async getSessionEvents(sessionId: string): Promise<SessionEvent[]> {
     try {
-      const response = await callAPIWithETag<{ events: SessionEvent[] }>(
-        `/api/sessions/${sessionId}/events`
-      );
+      const response = await callAPIWithETag<{ events: SessionEvent[] }>(`/api/sessions/${sessionId}/events`);
       return response.events || [];
     } catch (error) {
       console.error(`Failed to get events for session ${sessionId}:`, error);
@@ -103,13 +97,10 @@ export const sessionService = {
    */
   async createSession(data: CreateSessionRequest): Promise<CreateSessionResponse> {
     try {
-      const response = await callAPIWithETag<CreateSessionResponse>(
-        "/api/sessions",
-        {
-          method: "POST",
-          body: JSON.stringify(data),
-        }
-      );
+      const response = await callAPIWithETag<CreateSessionResponse>("/api/sessions", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
       return response;
     } catch (error) {
       console.error("Failed to create session:", error);
@@ -120,18 +111,12 @@ export const sessionService = {
   /**
    * Update a session
    */
-  async updateSession(
-    sessionId: string,
-    data: UpdateSessionRequest
-  ): Promise<UpdateSessionResponse> {
+  async updateSession(sessionId: string, data: UpdateSessionRequest): Promise<UpdateSessionResponse> {
     try {
-      const response = await callAPIWithETag<UpdateSessionResponse>(
-        `/api/sessions/${sessionId}`,
-        {
-          method: "PUT",
-          body: JSON.stringify(data),
-        }
-      );
+      const response = await callAPIWithETag<UpdateSessionResponse>(`/api/sessions/${sessionId}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      });
       return response;
     } catch (error) {
       console.error(`Failed to update session ${sessionId}:`, error);
@@ -142,18 +127,12 @@ export const sessionService = {
   /**
    * End a session
    */
-  async endSession(
-    sessionId: string,
-    data?: EndSessionRequest
-  ): Promise<EndSessionResponse> {
+  async endSession(sessionId: string, data?: EndSessionRequest): Promise<EndSessionResponse> {
     try {
-      const response = await callAPIWithETag<EndSessionResponse>(
-        `/api/sessions/${sessionId}/end`,
-        {
-          method: "POST",
-          body: JSON.stringify(data || {}),
-        }
-      );
+      const response = await callAPIWithETag<EndSessionResponse>(`/api/sessions/${sessionId}/end`, {
+        method: "POST",
+        body: JSON.stringify(data || {}),
+      });
       return response;
     } catch (error) {
       console.error(`Failed to end session ${sessionId}:`, error);
@@ -166,13 +145,10 @@ export const sessionService = {
    */
   async logEvent(data: LogEventRequest): Promise<LogEventResponse> {
     try {
-      const response = await callAPIWithETag<LogEventResponse>(
-        "/api/sessions/events",
-        {
-          method: "POST",
-          body: JSON.stringify(data),
-        }
-      );
+      const response = await callAPIWithETag<LogEventResponse>("/api/sessions/events", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
       return response;
     } catch (error) {
       console.error("Failed to log event:", error);
@@ -183,17 +159,12 @@ export const sessionService = {
   /**
    * Search sessions semantically
    */
-  async searchSessions(
-    data: SearchSessionsRequest
-  ): Promise<SearchSessionsResponse> {
+  async searchSessions(data: SearchSessionsRequest): Promise<SearchSessionsResponse> {
     try {
-      const response = await callAPIWithETag<SearchSessionsResponse>(
-        "/api/sessions/search",
-        {
-          method: "POST",
-          body: JSON.stringify(data),
-        }
-      );
+      const response = await callAPIWithETag<SearchSessionsResponse>("/api/sessions/search", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
       return response;
     } catch (error) {
       console.error("Failed to search sessions:", error);
@@ -207,16 +178,13 @@ export const sessionService = {
   async searchAllMemory(
     query: string,
     limit: number = 20,
-    threshold: number = 0.7
+    threshold: number = 0.7,
   ): Promise<UnifiedMemorySearchResponse> {
     try {
-      const response = await callAPIWithETag<UnifiedMemorySearchResponse>(
-        "/api/sessions/search/all",
-        {
-          method: "POST",
-          body: JSON.stringify({ query, limit, threshold }),
-        }
-      );
+      const response = await callAPIWithETag<UnifiedMemorySearchResponse>("/api/sessions/search/all", {
+        method: "POST",
+        body: JSON.stringify({ query, limit, threshold }),
+      });
       return response;
     } catch (error) {
       console.error("Failed to search all memory:", error);
@@ -229,12 +197,9 @@ export const sessionService = {
    */
   async summarizeSession(sessionId: string): Promise<SummarizeSessionResponse> {
     try {
-      const response = await callAPIWithETag<SummarizeSessionResponse>(
-        `/api/sessions/${sessionId}/summarize`,
-        {
-          method: "POST",
-        }
-      );
+      const response = await callAPIWithETag<SummarizeSessionResponse>(`/api/sessions/${sessionId}/summarize`, {
+        method: "POST",
+      });
       return response;
     } catch (error) {
       console.error(`Failed to summarize session ${sessionId}:`, error);

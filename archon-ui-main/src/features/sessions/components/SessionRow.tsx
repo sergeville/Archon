@@ -5,7 +5,7 @@
  */
 
 import { formatDistanceToNow } from "date-fns";
-import { Clock, User, Circle } from "lucide-react";
+import { Circle, Clock, User } from "lucide-react";
 import { cn } from "@/features/ui/primitives/styles";
 import type { Session } from "../types";
 
@@ -24,10 +24,7 @@ export function SessionRow({ session, onClick }: SessionRowProps) {
   const durationHours = Math.floor(durationMinutes / 60);
   const remainingMinutes = durationMinutes % 60;
 
-  const durationText =
-    durationHours > 0
-      ? `${durationHours}h ${remainingMinutes}m`
-      : `${durationMinutes}m`;
+  const durationText = durationHours > 0 ? `${durationHours}h ${remainingMinutes}m` : `${durationMinutes}m`;
 
   const getAgentColor = (agent: string) => {
     switch (agent) {
@@ -45,13 +42,12 @@ export function SessionRow({ session, onClick }: SessionRowProps) {
   };
 
   return (
-    <div
+    <button
+      type="button"
       className={cn(
-        "group flex items-center gap-3 px-4 py-2 rounded-lg border transition-all cursor-pointer",
+        "group flex w-full items-center gap-3 px-4 py-2 rounded-lg border transition-all",
         "hover:border-cyan-500/50 hover:bg-cyan-500/5",
-        isActive
-          ? "border-cyan-500/30 bg-cyan-500/5"
-          : "border-gray-700/50 hover:border-gray-600"
+        isActive ? "border-cyan-500/30 bg-cyan-500/5" : "border-gray-700/50 hover:border-gray-600",
       )}
       onClick={onClick}
     >
@@ -79,11 +75,10 @@ export function SessionRow({ session, onClick }: SessionRowProps) {
 
       {/* Task/Summary */}
       <div className="flex-1 min-w-0">
-        <p className={cn(
-          "text-sm truncate",
-          isActive ? "text-gray-300" : "text-gray-500"
-        )}>
-          {session.summary || (session.context?.working_on as string) || (isActive ? "Active session" : "Session ended")}
+        <p className={cn("text-sm truncate", isActive ? "text-gray-300" : "text-gray-500")}>
+          {session.summary ||
+            (session.context?.working_on as string) ||
+            (isActive ? "Active session" : "Session ended")}
         </p>
       </div>
 
@@ -97,13 +92,11 @@ export function SessionRow({ session, onClick }: SessionRowProps) {
       <div className="text-xs text-gray-500 min-w-[80px] text-right">
         {isActive
           ? formatDistanceToNow(new Date(session.started_at), { addSuffix: true })
-          : `Ended ${formatDistanceToNow(new Date(session.ended_at!), { addSuffix: true })}`}
+          : `Ended ${formatDistanceToNow(new Date(session.ended_at ?? ""), { addSuffix: true })}`}
       </div>
 
       {/* Session ID */}
-      <div className="text-xs text-gray-600 font-mono">
-        #{session.id.slice(0, 8)}
-      </div>
-    </div>
+      <div className="text-xs text-gray-600 font-mono">#{session.id.slice(0, 8)}</div>
+    </button>
   );
 }

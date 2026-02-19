@@ -5,8 +5,8 @@
  * Automatically invalidates query cache when session events occur.
  */
 
-import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { sessionKeys } from "./useSessionQueries";
 
 interface SessionEvent {
@@ -72,7 +72,7 @@ export function useSessionEvents() {
 
           // Reconnect with exponential backoff
           if (reconnectAttempts.current < maxReconnectAttempts) {
-            const backoffDelay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
+            const backoffDelay = Math.min(1000 * 2 ** reconnectAttempts.current, 30000);
             reconnectAttempts.current++;
 
             console.log(`Reconnecting in ${backoffDelay}ms... (attempt ${reconnectAttempts.current})`);

@@ -5,7 +5,7 @@
  */
 
 import { formatDistanceToNow } from "date-fns";
-import { Clock, User, Calendar, Activity, CheckCircle2, Circle } from "lucide-react";
+import { Activity, Calendar, CheckCircle2, Circle, Clock, User } from "lucide-react";
 import { Card } from "@/features/ui/primitives/card";
 import { cn } from "@/features/ui/primitives/styles";
 import type { Session } from "../types";
@@ -25,10 +25,7 @@ export function SessionCard({ session, onClick }: SessionCardProps) {
   const durationHours = Math.floor(durationMinutes / 60);
   const remainingMinutes = durationMinutes % 60;
 
-  const durationText =
-    durationHours > 0
-      ? `${durationHours}h ${remainingMinutes}m`
-      : `${durationMinutes}m`;
+  const durationText = durationHours > 0 ? `${durationHours}h ${remainingMinutes}m` : `${durationMinutes}m`;
 
   const getAgentColor = (agent: string) => {
     switch (agent) {
@@ -65,7 +62,7 @@ export function SessionCard({ session, onClick }: SessionCardProps) {
               <span
                 className={cn(
                   "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border",
-                  getAgentColor(session.agent)
+                  getAgentColor(session.agent),
                 )}
               >
                 <User className="h-3 w-3" />
@@ -81,9 +78,7 @@ export function SessionCard({ session, onClick }: SessionCardProps) {
           </div>
 
           {/* Summary */}
-          {session.summary && (
-            <p className="text-sm text-gray-300 line-clamp-2">{session.summary}</p>
-          )}
+          {session.summary && <p className="text-sm text-gray-300 line-clamp-2">{session.summary}</p>}
 
           {/* Metadata */}
           <div className="flex items-center gap-4 text-xs text-gray-400">
@@ -102,8 +97,8 @@ export function SessionCard({ session, onClick }: SessionCardProps) {
             <div className="space-y-1">
               <p className="text-xs font-medium text-gray-400">Key Events:</p>
               <ul className="text-xs text-gray-500 space-y-0.5">
-                {session.metadata.ai_summary.key_events.slice(0, 3).map((event, i) => (
-                  <li key={i} className="flex items-start gap-2">
+                {session.metadata.ai_summary.key_events.slice(0, 3).map((event) => (
+                  <li key={event} className="flex items-start gap-2">
                     <span className="text-cyan-400">•</span>
                     <span className="line-clamp-1">{event}</span>
                   </li>
@@ -114,9 +109,7 @@ export function SessionCard({ session, onClick }: SessionCardProps) {
         </div>
 
         {/* Session ID */}
-        <div className="text-xs text-gray-500 font-mono">
-          #{session.id.slice(0, 8)}
-        </div>
+        <div className="text-xs text-gray-500 font-mono">#{session.id.slice(0, 8)}</div>
       </div>
     </Card>
   );

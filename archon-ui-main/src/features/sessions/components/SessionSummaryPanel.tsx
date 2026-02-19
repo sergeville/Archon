@@ -9,7 +9,7 @@
  */
 
 import { formatDistanceToNow } from "date-fns";
-import { Sparkles, CheckCircle2, Lightbulb, TrendingUp, ArrowRight } from "lucide-react";
+import { ArrowRight, CheckCircle2, Lightbulb, Sparkles, TrendingUp } from "lucide-react";
 import { Card } from "@/features/ui/primitives/card";
 import type { SessionMetadata } from "../types";
 
@@ -51,8 +51,8 @@ export function SessionSummaryPanel({ summary, metadata }: SessionSummaryPanelPr
                   <span className="text-sm font-medium">Key Events</span>
                 </div>
                 <ul className="space-y-1">
-                  {aiSummary.key_events.map((event, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs text-gray-400">
+                  {aiSummary.key_events.map((event) => (
+                    <li key={event} className="flex items-start gap-2 text-xs text-gray-400">
                       <span className="text-cyan-400 mt-1">•</span>
                       <span className="flex-1">{event}</span>
                     </li>
@@ -69,8 +69,8 @@ export function SessionSummaryPanel({ summary, metadata }: SessionSummaryPanelPr
                   <span className="text-sm font-medium">Decisions Made</span>
                 </div>
                 <ul className="space-y-1">
-                  {aiSummary.decisions.map((decision, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs text-gray-400">
+                  {aiSummary.decisions.map((decision) => (
+                    <li key={decision} className="flex items-start gap-2 text-xs text-gray-400">
                       <span className="text-blue-400 mt-1">•</span>
                       <span className="flex-1">{decision}</span>
                     </li>
@@ -87,8 +87,8 @@ export function SessionSummaryPanel({ summary, metadata }: SessionSummaryPanelPr
                   <span className="text-sm font-medium">Outcomes</span>
                 </div>
                 <ul className="space-y-1">
-                  {aiSummary.outcomes.map((outcome, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs text-gray-400">
+                  {aiSummary.outcomes.map((outcome) => (
+                    <li key={outcome} className="flex items-start gap-2 text-xs text-gray-400">
                       <span className="text-green-400 mt-1">•</span>
                       <span className="flex-1">{outcome}</span>
                     </li>
@@ -105,9 +105,9 @@ export function SessionSummaryPanel({ summary, metadata }: SessionSummaryPanelPr
                   <span className="text-sm font-medium">Next Steps</span>
                 </div>
                 <ul className="space-y-1">
-                  {aiSummary.next_steps.map((step, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs text-gray-400">
-                      <span className="text-purple-400 mt-1">{i + 1}.</span>
+                  {aiSummary.next_steps.map((step, index) => (
+                    <li key={step} className="flex items-start gap-2 text-xs text-gray-400">
+                      <span className="text-purple-400 mt-1">{index + 1}.</span>
                       <span className="flex-1">{step}</span>
                     </li>
                   ))}

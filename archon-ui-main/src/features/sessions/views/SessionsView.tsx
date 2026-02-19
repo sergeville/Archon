@@ -5,19 +5,13 @@
  * Shows active and recent sessions with filtering options
  */
 
-import { useState } from "react";
 import { Activity, Filter, Search, TrendingUp } from "lucide-react";
-import { useSessions } from "../hooks/useSessionQueries";
-import { SessionRow, SessionDetailModal } from "../components";
+import { useState } from "react";
 import { Button } from "@/features/ui/primitives/button";
 import { Input } from "@/features/ui/primitives/input";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/features/ui/primitives/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/features/ui/primitives/select";
+import { SessionDetailModal, SessionRow } from "../components";
+import { useSessions } from "../hooks/useSessionQueries";
 import type { SessionFilterOptions } from "../types";
 
 export function SessionsView() {
@@ -69,19 +63,15 @@ export function SessionsView() {
             <Activity className="h-6 w-6 text-cyan-400" />
             Sessions
           </h1>
-          <p className="text-sm text-gray-400 mt-1">
-            Track agent work sessions and task progress
-          </p>
+          <p className="text-sm text-gray-400 mt-1">Track agent work sessions and task progress</p>
         </div>
 
         <div className="flex items-center gap-2">
           <div className="text-sm text-gray-400">
-            <span className="text-cyan-400 font-bold">{activeSessions.length}</span>{" "}
-            active
+            <span className="text-cyan-400 font-bold">{activeSessions.length}</span> active
           </div>
           <div className="text-sm text-gray-400">
-            <span className="text-gray-300 font-bold">{completedSessions.length}</span>{" "}
-            completed
+            <span className="text-gray-300 font-bold">{completedSessions.length}</span> completed
           </div>
         </div>
       </div>
@@ -103,10 +93,7 @@ export function SessionsView() {
         </div>
 
         {/* Agent Filter */}
-        <Select
-          value={filters.agent || "all"}
-          onValueChange={(value) => handleFilterChange("agent", value)}
-        >
+        <Select value={filters.agent || "all"} onValueChange={(value) => handleFilterChange("agent", value)}>
           <SelectTrigger className="w-[140px]">
             <SelectValue />
           </SelectTrigger>
@@ -120,10 +107,7 @@ export function SessionsView() {
         </Select>
 
         {/* Timeframe Filter */}
-        <Select
-          value={filters.timeframe || "all"}
-          onValueChange={(value) => handleFilterChange("timeframe", value)}
-        >
+        <Select value={filters.timeframe || "all"} onValueChange={(value) => handleFilterChange("timeframe", value)}>
           <SelectTrigger className="w-[160px]">
             <SelectValue />
           </SelectTrigger>
@@ -185,11 +169,7 @@ export function SessionsView() {
           </div>
           <div className="space-y-1">
             {activeSessions.map((session) => (
-              <SessionRow
-                key={session.id}
-                session={session}
-                onClick={() => setSelectedSessionId(session.id)}
-              />
+              <SessionRow key={session.id} session={session} onClick={() => setSelectedSessionId(session.id)} />
             ))}
           </div>
         </div>
@@ -205,11 +185,7 @@ export function SessionsView() {
           </div>
           <div className="space-y-1">
             {completedSessions.map((session) => (
-              <SessionRow
-                key={session.id}
-                session={session}
-                onClick={() => setSelectedSessionId(session.id)}
-              />
+              <SessionRow key={session.id} session={session} onClick={() => setSelectedSessionId(session.id)} />
             ))}
           </div>
         </div>
@@ -217,10 +193,7 @@ export function SessionsView() {
 
       {/* Session Detail Modal */}
       {selectedSessionId && (
-        <SessionDetailModal
-          sessionId={selectedSessionId}
-          onClose={() => setSelectedSessionId(null)}
-        />
+        <SessionDetailModal sessionId={selectedSessionId} onClose={() => setSelectedSessionId(null)} />
       )}
     </div>
   );

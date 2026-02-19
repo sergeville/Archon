@@ -8,22 +8,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSmartPolling } from "@/features/shared/hooks";
 import { useToast } from "@/features/shared/hooks/useToast";
-import {
-  createOptimisticEntity,
-  replaceOptimisticEntity,
-} from "@/features/shared/utils/optimistic";
+import { createOptimisticEntity, replaceOptimisticEntity } from "@/features/shared/utils/optimistic";
 import { DISABLED_QUERY_KEY, STALE_TIMES } from "../../shared/config/queryPatterns";
 import { sessionService } from "../services";
 import type {
-  Session,
-  SessionEvent,
   CreateSessionRequest,
-  UpdateSessionRequest,
   EndSessionRequest,
   LogEventRequest,
-  SearchSessionsRequest,
-  SessionFilterOptions,
   MemorySearchResult,
+  SearchSessionsRequest,
+  Session,
+  SessionEvent,
+  SessionFilterOptions,
+  UpdateSessionRequest,
 } from "../types";
 
 /**
@@ -32,12 +29,10 @@ import type {
 export const sessionKeys = {
   all: ["sessions"] as const,
   lists: () => [...sessionKeys.all, "list"] as const,
-  listWithFilters: (filters?: SessionFilterOptions) =>
-    [...sessionKeys.all, "list", filters] as const,
+  listWithFilters: (filters?: SessionFilterOptions) => [...sessionKeys.all, "list", filters] as const,
   detail: (id: string) => [...sessionKeys.all, "detail", id] as const,
   events: (sessionId: string) => [...sessionKeys.all, sessionId, "events"] as const,
-  recentByAgent: (agent: string, limit?: number) =>
-    [...sessionKeys.all, "recent", agent, limit] as const,
+  recentByAgent: (agent: string, limit?: number) => [...sessionKeys.all, "recent", agent, limit] as const,
   search: (query: string) => [...sessionKeys.all, "search", query] as const,
   memorySearch: (query: string) => ["memory", "search", query] as const,
 };
@@ -64,9 +59,7 @@ export function useSession(sessionId: string | undefined) {
   return useQuery<Session>({
     queryKey: sessionId ? sessionKeys.detail(sessionId) : DISABLED_QUERY_KEY,
     queryFn: () =>
-      sessionId
-        ? sessionService.getSession(sessionId).then((response) => response)
-        : Promise.reject("No session ID"),
+      sessionId ? sessionService.getSession(sessionId).then((response) => response) : Promise.reject("No session ID"),
     enabled: !!sessionId,
     staleTime: STALE_TIMES.normal,
   });
@@ -92,10 +85,7 @@ export function useRecentSessions(agent: string, limit: number = 10) {
 export function useSessionEvents(sessionId: string | undefined) {
   return useQuery<SessionEvent[]>({
     queryKey: sessionId ? sessionKeys.events(sessionId) : DISABLED_QUERY_KEY,
-    queryFn: () =>
-      sessionId
-        ? sessionService.getSessionEvents(sessionId)
-        : Promise.reject("No session ID"),
+    queryFn: () => (sessionId ? sessionService.getSessionEvents(sessionId) : Promise.reject("No session ID")),
     enabled: !!sessionId,
     staleTime: STALE_TIMES.frequent,
   });
@@ -115,9 +105,7 @@ export function useCreateSession() {
       await queryClient.cancelQueries({ queryKey: sessionKeys.lists() });
 
       // Snapshot previous value
-      const previousSessions = queryClient.getQueryData<Session[]>(
-        sessionKeys.lists()
-      );
+      const previousSessions = queryClient.getQueryData<Session[]>(sessionKeys.lists());
 
       // Create optimistic session
       const optimisticSession = createOptimisticEntity<Session>({
@@ -134,13 +122,10 @@ export function useCreateSession() {
       });
 
       // Optimistically add session
-      queryClient.setQueryData(
-        sessionKeys.lists(),
-        (old: Session[] | undefined) => {
-          if (!old) return [optimisticSession];
-          return [optimisticSession, ...old];
-        }
-      );
+      queryClient.setQueryData(sessionKeys.lists(), (old: Session[] | undefined) => {
+        if (!old) return [optimisticSession];
+        return [optimisticSession, ...old];
+      });
 
       return { previousSessions, optimisticId: optimisticSession._localId };
     },
@@ -158,16 +143,9 @@ export function useCreateSession() {
       const newSession = response.session;
 
       // Replace optimistic with server data
-      queryClient.setQueryData(
-        sessionKeys.lists(),
-        (sessions: Session[] = []) => {
-          return replaceOptimisticEntity(
-            sessions,
-            context?.optimisticId || "",
-            newSession
-          );
-        }
-      );
+      queryClient.setQueryData(sessionKeys.lists(), (sessions: Session[] = []) => {
+        return replaceOptimisticEntity(sessions, context?.optimisticId || "", newSession);
+      });
 
       showToast("Session created successfully", "success");
     },
@@ -185,32 +163,19 @@ export function useUpdateSession() {
   const { showToast } = useToast();
 
   return useMutation({
-    mutationFn: ({
-      sessionId,
-      updates,
-    }: {
-      sessionId: string;
-      updates: UpdateSessionRequest;
-    }) => sessionService.updateSession(sessionId, updates),
+    mutationFn: ({ sessionId, updates }: { sessionId: string; updates: UpdateSessionRequest }) =>
+      sessionService.updateSession(sessionId, updates),
     onSuccess: (response) => {
       const updatedSession = response.session;
 
       // Update in list
-      queryClient.setQueryData(
-        sessionKeys.lists(),
-        (old: Session[] | undefined) => {
-          if (!old) return old;
-          return old.map((s) =>
-            s.id === updatedSession.id ? updatedSession : s
-          );
-        }
-      );
+      queryClient.setQueryData(sessionKeys.lists(), (old: Session[] | undefined) => {
+        if (!old) return old;
+        return old.map((s) => (s.id === updatedSession.id ? updatedSession : s));
+      });
 
       // Update detail query
-      queryClient.setQueryData(
-        sessionKeys.detail(updatedSession.id),
-        updatedSession
-      );
+      queryClient.setQueryData(sessionKeys.detail(updatedSession.id), updatedSession);
 
       showToast("Session updated successfully", "success");
     },
@@ -229,30 +194,19 @@ export function useEndSession() {
   const { showToast } = useToast();
 
   return useMutation({
-    mutationFn: ({
-      sessionId,
-      data,
-    }: {
-      sessionId: string;
-      data?: EndSessionRequest;
-    }) => sessionService.endSession(sessionId, data),
+    mutationFn: ({ sessionId, data }: { sessionId: string; data?: EndSessionRequest }) =>
+      sessionService.endSession(sessionId, data),
     onSuccess: (response) => {
       const endedSession = response.session;
 
       // Update in list
-      queryClient.setQueryData(
-        sessionKeys.lists(),
-        (old: Session[] | undefined) => {
-          if (!old) return old;
-          return old.map((s) => (s.id === endedSession.id ? endedSession : s));
-        }
-      );
+      queryClient.setQueryData(sessionKeys.lists(), (old: Session[] | undefined) => {
+        if (!old) return old;
+        return old.map((s) => (s.id === endedSession.id ? endedSession : s));
+      });
 
       // Update detail query
-      queryClient.setQueryData(
-        sessionKeys.detail(endedSession.id),
-        endedSession
-      );
+      queryClient.setQueryData(sessionKeys.detail(endedSession.id), endedSession);
 
       showToast("Session ended successfully", "success");
     },
@@ -294,8 +248,7 @@ export function useSearchSessions() {
   const { showToast } = useToast();
 
   return useMutation({
-    mutationFn: (data: SearchSessionsRequest) =>
-      sessionService.searchSessions(data),
+    mutationFn: (data: SearchSessionsRequest) => sessionService.searchSessions(data),
     onError: (error) => {
       console.error("Failed to search sessions:", error);
       showToast("Failed to search sessions", "error");
@@ -314,8 +267,7 @@ export function useMemorySearch() {
     Error,
     { query: string; limit?: number; threshold?: number }
   >({
-    mutationFn: ({ query, limit = 20, threshold = 0.7 }) =>
-      sessionService.searchAllMemory(query, limit, threshold),
+    mutationFn: ({ query, limit = 20, threshold = 0.7 }) => sessionService.searchAllMemory(query, limit, threshold),
     onError: (error) => {
       console.error("Failed to search memory:", error);
       showToast("Failed to search memory", "error");
@@ -331,8 +283,7 @@ export function useSummarizeSession() {
   const { showToast } = useToast();
 
   return useMutation({
-    mutationFn: (sessionId: string) =>
-      sessionService.summarizeSession(sessionId),
+    mutationFn: (sessionId: string) => sessionService.summarizeSession(sessionId),
     onSuccess: (response) => {
       // Invalidate session detail to refetch with summary
       queryClient.invalidateQueries({

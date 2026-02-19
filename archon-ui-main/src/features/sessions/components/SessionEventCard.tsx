@@ -5,16 +5,7 @@
  */
 
 import { format } from "date-fns";
-import {
-  FileCode,
-  GitCommit,
-  MessageSquare,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  Zap,
-  Clock,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle, Clock, FileCode, GitCommit, MessageSquare, XCircle, Zap } from "lucide-react";
 import { cn } from "@/features/ui/primitives/styles";
 import type { SessionEvent } from "../types";
 
@@ -75,9 +66,7 @@ export function SessionEventCard({ event, isFirst, isLast }: SessionEventCardPro
   };
 
   const formatEventData = (data: Record<string, unknown>) => {
-    const entries = Object.entries(data).filter(
-      ([key]) => !key.startsWith("_") && key !== "timestamp"
-    );
+    const entries = Object.entries(data).filter(([key]) => !key.startsWith("_") && key !== "timestamp");
 
     if (entries.length === 0) return null;
 
@@ -85,9 +74,7 @@ export function SessionEventCard({ event, isFirst, isLast }: SessionEventCardPro
       <div className="mt-2 space-y-1">
         {entries.map(([key, value]) => (
           <div key={key} className="flex items-start gap-2 text-xs">
-            <span className="text-gray-500 min-w-[100px] font-medium">
-              {key.replace(/_/g, " ")}:
-            </span>
+            <span className="text-gray-500 min-w-[100px] font-medium">{key.replace(/_/g, " ")}:</span>
             <span className="text-gray-300 flex-1 font-mono">
               {typeof value === "object" ? JSON.stringify(value, null, 2) : String(value)}
             </span>
@@ -100,9 +87,7 @@ export function SessionEventCard({ event, isFirst, isLast }: SessionEventCardPro
   return (
     <div className="relative flex gap-3">
       {/* Timeline Line */}
-      {!isLast && (
-        <div className="absolute left-[11px] top-8 bottom-0 w-0.5 bg-gray-700/50" />
-      )}
+      {!isLast && <div className="absolute left-[11px] top-8 bottom-0 w-0.5 bg-gray-700/50" />}
 
       {/* Icon */}
       <div className="relative z-10 flex items-center justify-center w-6 h-6 rounded-full bg-gray-900 border border-gray-700">
@@ -115,9 +100,7 @@ export function SessionEventCard({ event, isFirst, isLast }: SessionEventCardPro
           <div className="flex-1 space-y-1">
             {/* Event Type */}
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-white">
-                {event.event_type.replace(/_/g, " ")}
-              </span>
+              <span className="text-sm font-medium text-white">{event.event_type.replace(/_/g, " ")}</span>
               {isFirst && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
                   Latest
@@ -131,13 +114,9 @@ export function SessionEventCard({ event, isFirst, isLast }: SessionEventCardPro
             {/* Metadata */}
             {event.metadata && Object.keys(event.metadata).length > 0 && (
               <details className="mt-2">
-                <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-400">
-                  Metadata
-                </summary>
+                <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-400">Metadata</summary>
                 <div className="mt-1 text-xs text-gray-400 font-mono bg-gray-900/50 rounded p-2">
-                  <pre className="whitespace-pre-wrap">
-                    {JSON.stringify(event.metadata, null, 2)}
-                  </pre>
+                  <pre className="whitespace-pre-wrap">{JSON.stringify(event.metadata, null, 2)}</pre>
                 </div>
               </details>
             )}

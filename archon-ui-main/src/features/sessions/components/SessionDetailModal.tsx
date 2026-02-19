@@ -5,29 +5,15 @@
  * Displays complete session history with event cards.
  */
 
+import { format, formatDistanceToNow } from "date-fns";
+import { Activity, Calendar, CheckCircle2, Clock, Loader2, Sparkles, User, X } from "lucide-react";
 import { useState } from "react";
-import { formatDistanceToNow, format } from "date-fns";
-import {
-  X,
-  User,
-  Clock,
-  Calendar,
-  Activity,
-  CheckCircle2,
-  Sparkles,
-  Loader2,
-} from "lucide-react";
-import {
-  useSession,
-  useSessionEvents,
-  useEndSession,
-  useSummarizeSession,
-} from "../hooks/useSessionQueries";
-import { SessionEventCard } from "./SessionEventCard";
-import { SessionSummaryPanel } from "./SessionSummaryPanel";
 import { Button } from "@/features/ui/primitives/button";
 import { Card } from "@/features/ui/primitives/card";
 import { cn } from "@/features/ui/primitives/styles";
+import { useEndSession, useSession, useSessionEvents, useSummarizeSession } from "../hooks/useSessionQueries";
+import { SessionEventCard } from "./SessionEventCard";
+import { SessionSummaryPanel } from "./SessionSummaryPanel";
 
 interface SessionDetailModalProps {
   sessionId: string;
@@ -52,10 +38,7 @@ export function SessionDetailModal({ sessionId, onClose }: SessionDetailModalPro
   const durationMinutes = Math.floor(duration / (1000 * 60));
   const durationHours = Math.floor(durationMinutes / 60);
   const remainingMinutes = durationMinutes % 60;
-  const durationText =
-    durationHours > 0
-      ? `${durationHours}h ${remainingMinutes}m`
-      : `${durationMinutes}m`;
+  const durationText = durationHours > 0 ? `${durationHours}h ${remainingMinutes}m` : `${durationMinutes}m`;
 
   const getAgentColor = (agent: string) => {
     switch (agent) {
@@ -143,7 +126,7 @@ export function SessionDetailModal({ sessionId, onClose }: SessionDetailModalPro
                   <span
                     className={cn(
                       "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border",
-                      getAgentColor(session.agent)
+                      getAgentColor(session.agent),
                     )}
                   >
                     <User className="h-3 w-3" />
@@ -177,12 +160,7 @@ export function SessionDetailModal({ sessionId, onClose }: SessionDetailModalPro
               </div>
 
               {/* Close Button */}
-              <Button
-                onClick={onClose}
-                variant="ghost"
-                size="sm"
-                className="text-gray-400 hover:text-white"
-              >
+              <Button onClick={onClose} variant="ghost" size="sm" className="text-gray-400 hover:text-white">
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -190,12 +168,7 @@ export function SessionDetailModal({ sessionId, onClose }: SessionDetailModalPro
             {/* Actions */}
             <div className="flex items-center gap-2 mt-4">
               {isActive && (
-                <Button
-                  onClick={handleEndSession}
-                  variant="outline"
-                  size="sm"
-                  disabled={endSessionMutation.isPending}
-                >
+                <Button onClick={handleEndSession} variant="outline" size="sm" disabled={endSessionMutation.isPending}>
                   {endSessionMutation.isPending ? (
                     <>
                       <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
@@ -235,12 +208,7 @@ export function SessionDetailModal({ sessionId, onClose }: SessionDetailModalPro
           {/* Content */}
           <div className="p-6 space-y-6">
             {/* AI Summary Panel */}
-            {session.summary && (
-              <SessionSummaryPanel
-                summary={session.summary}
-                metadata={session.metadata}
-              />
-            )}
+            {session.summary && <SessionSummaryPanel summary={session.summary} metadata={session.metadata} />}
 
             {/* Event Timeline */}
             <div className="space-y-3">
@@ -258,9 +226,7 @@ export function SessionDetailModal({ sessionId, onClose }: SessionDetailModalPro
               ) : events.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-400 text-sm">No events logged yet</p>
-                  <p className="text-gray-500 text-xs mt-1">
-                    Events will appear here as the session progresses
-                  </p>
+                  <p className="text-gray-500 text-xs mt-1">Events will appear here as the session progresses</p>
                 </div>
               ) : (
                 <div className="space-y-2">
