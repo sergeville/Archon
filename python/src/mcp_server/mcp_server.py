@@ -543,6 +543,57 @@ def register_modules():
         logger.error(f"✗ Failed to register pattern tools: {e}")
         logger.error(traceback.format_exc())
 
+    # Agent Registry Tools
+    try:
+        from src.mcp_server.features.agents import register_agent_tools
+
+        register_agent_tools(mcp)
+        modules_registered += 1
+        logger.info("✓ Agent registry tools registered")
+    except ImportError as e:
+        logger.warning(f"⚠ Agent registry tools module not available (optional): {e}")
+    except (SyntaxError, NameError, AttributeError) as e:
+        logger.error(f"✗ Code error in agent registry tools - MUST FIX: {e}")
+        logger.error(traceback.format_exc())
+        raise
+    except Exception as e:
+        logger.error(f"✗ Failed to register agent registry tools: {e}")
+        logger.error(traceback.format_exc())
+
+    # Shared Context Tools
+    try:
+        from src.mcp_server.features.context import register_context_tools
+
+        register_context_tools(mcp)
+        modules_registered += 1
+        logger.info("✓ Shared context tools registered")
+    except ImportError as e:
+        logger.warning(f"⚠ Shared context tools module not available (optional): {e}")
+    except (SyntaxError, NameError, AttributeError) as e:
+        logger.error(f"✗ Code error in shared context tools - MUST FIX: {e}")
+        logger.error(traceback.format_exc())
+        raise
+    except Exception as e:
+        logger.error(f"✗ Failed to register shared context tools: {e}")
+        logger.error(traceback.format_exc())
+
+    # Handoff Tools
+    try:
+        from src.mcp_server.features.handoffs import register_handoff_tools
+
+        register_handoff_tools(mcp)
+        modules_registered += 1
+        logger.info("✓ Handoff tools registered")
+    except ImportError as e:
+        logger.warning(f"⚠ Handoff tools module not available (optional): {e}")
+    except (SyntaxError, NameError, AttributeError) as e:
+        logger.error(f"✗ Code error in handoff tools - MUST FIX: {e}")
+        logger.error(traceback.format_exc())
+        raise
+    except Exception as e:
+        logger.error(f"✗ Failed to register handoff tools: {e}")
+        logger.error(traceback.format_exc())
+
     # Document Management Tools
     try:
         from src.mcp_server.features.documents import register_document_tools

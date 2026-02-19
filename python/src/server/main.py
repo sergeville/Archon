@@ -38,6 +38,9 @@ from .api_routes.settings_api import router as settings_router
 from .api_routes.sessions_api import router as sessions_router
 from .api_routes.patterns_api import router as patterns_router
 from .api_routes.whiteboard_api import router as whiteboard_router
+from .api_routes.agent_registry_api import router as agent_registry_router
+from .api_routes.shared_context_api import router as shared_context_router
+from .api_routes.handoff_api import router as handoff_router
 
 # Import Logfire configuration
 from .config.logfire_config import api_logger, setup_logfire
@@ -227,6 +230,9 @@ app.include_router(projects_router)
 app.include_router(sessions_router)
 app.include_router(whiteboard_router)
 app.include_router(patterns_router)
+app.include_router(agent_registry_router)
+app.include_router(shared_context_router)
+app.include_router(handoff_router)
 app.include_router(progress_router)
 app.include_router(agent_chat_router)
 app.include_router(agent_work_orders_router)  # Proxy to independent agent work orders service
