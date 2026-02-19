@@ -8,20 +8,22 @@
 import { useState } from "react";
 import { Activity, Filter, Search, TrendingUp } from "lucide-react";
 import { useSessions } from "../hooks/useSessionQueries";
-import { useSessionEvents } from "../hooks/useSessionEvents";
 import { SessionRow, SessionDetailModal } from "../components";
 import { Button } from "@/features/ui/primitives/button";
 import { Input } from "@/features/ui/primitives/input";
-import { Select } from "@/features/ui/primitives/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/features/ui/primitives/select";
 import type { SessionFilterOptions } from "../types";
 
 export function SessionsView() {
   const [filters, setFilters] = useState<SessionFilterOptions>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-
-  // Real-time session updates via SSE
-  useSessionEvents();
 
   const { data: sessions = [], isLoading, error } = useSessions(filters);
 
@@ -105,11 +107,16 @@ export function SessionsView() {
           value={filters.agent || "all"}
           onValueChange={(value) => handleFilterChange("agent", value)}
         >
-          <option value="all">All Agents</option>
-          <option value="claude">Claude</option>
-          <option value="gemini">Gemini</option>
-          <option value="gpt">GPT</option>
-          <option value="user">User</option>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Agents</SelectItem>
+            <SelectItem value="claude">Claude</SelectItem>
+            <SelectItem value="gemini">Gemini</SelectItem>
+            <SelectItem value="gpt">GPT</SelectItem>
+            <SelectItem value="user">User</SelectItem>
+          </SelectContent>
         </Select>
 
         {/* Timeframe Filter */}
@@ -117,10 +124,15 @@ export function SessionsView() {
           value={filters.timeframe || "all"}
           onValueChange={(value) => handleFilterChange("timeframe", value)}
         >
-          <option value="all">All Time</option>
-          <option value="24h">Last 24 Hours</option>
-          <option value="7days">Last 7 Days</option>
-          <option value="30days">Last 30 Days</option>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Time</SelectItem>
+            <SelectItem value="24h">Last 24 Hours</SelectItem>
+            <SelectItem value="7days">Last 7 Days</SelectItem>
+            <SelectItem value="30days">Last 30 Days</SelectItem>
+          </SelectContent>
         </Select>
 
         {/* Clear Filters */}

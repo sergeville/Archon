@@ -13,10 +13,9 @@ import type { Session } from "../types";
 interface SessionCardProps {
   session: Session;
   onClick?: () => void;
-  showProject?: boolean;
 }
 
-export function SessionCard({ session, onClick, showProject = true }: SessionCardProps) {
+export function SessionCard({ session, onClick }: SessionCardProps) {
   const isActive = !session.ended_at;
   const duration = session.ended_at
     ? new Date(session.ended_at).getTime() - new Date(session.started_at).getTime()

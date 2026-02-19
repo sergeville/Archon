@@ -272,7 +272,7 @@ export function useLogEvent() {
 
   return useMutation({
     mutationFn: (data: LogEventRequest) => sessionService.logEvent(data),
-    onSuccess: (response, variables) => {
+    onSuccess: (_response, variables) => {
       // Invalidate events query for this session
       queryClient.invalidateQueries({
         queryKey: sessionKeys.events(variables.session_id),

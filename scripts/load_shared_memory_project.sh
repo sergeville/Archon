@@ -57,29 +57,26 @@ echo "   - 60+ tasks organized by phase (Week 1-6)"
 echo "   - Task dependencies and metadata"
 echo ""
 
-if psql "$SUPABASE_URL" -f migration/shared_memory_project.sql; then
+if docker compose exec archon-server python /app/scripts/load_tasks_from_sql.py; then
     echo "✅ Project loaded successfully!"
 else
-    echo "❌ Failed to load project. Check your database connection."
+    echo "❌ Failed to load project via Python loader."
     exit 1
 fi
 
-# Verify project was created
+# Verify via API
 echo ""
 echo "5. Verifying project creation..."
-PROJECT_COUNT=$(psql "$SUPABASE_URL" -t -c "SELECT COUNT(*) FROM archon_projects WHERE title = 'Shared Memory System Implementation';" | tr -d ' ')
-TASK_COUNT=$(psql "$SUPABASE_URL" -t -c "SELECT COUNT(*) FROM archon_tasks WHERE project_id IN (SELECT id FROM archon_projects WHERE title = 'Shared Memory System Implementation');" | tr -d ' ')
+PROJECT_ID="7c3528df-b1a2-4fde-9fee-68727c15b6c6"
+TASK_COUNT=$(curl -s "http://localhost:8181/api/projects/${PROJECT_ID}/tasks" | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d) if isinstance(d,list) else len(d.get('tasks',[])))" 2>/dev/null || echo "0")
 
-if [ "$PROJECT_COUNT" -eq "1" ]; then
-    echo "✅ Project created: 'Shared Memory System Implementation'"
-    echo "✅ Tasks created: $TASK_COUNT"
+if [ "$TASK_COUNT" -gt "0" ]; then
+    echo "✅ Project ID: $PROJECT_ID"
+    echo "✅ Tasks loaded: $TASK_COUNT"
 else
-    echo "❌ Project not found. Something went wrong."
+    echo "❌ Tasks not found. Something went wrong."
     exit 1
 fi
-
-# Get project ID
-PROJECT_ID=$(psql "$SUPABASE_URL" -t -c "SELECT id FROM archon_projects WHERE title = 'Shared Memory System Implementation' LIMIT 1;" | tr -d ' ')
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

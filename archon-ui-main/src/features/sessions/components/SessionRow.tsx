@@ -83,7 +83,7 @@ export function SessionRow({ session, onClick }: SessionRowProps) {
           "text-sm truncate",
           isActive ? "text-gray-300" : "text-gray-500"
         )}>
-          {session.summary || session.context?.working_on || (isActive ? "Active session" : "Session ended")}
+          {session.summary || (session.context?.working_on as string) || (isActive ? "Active session" : "Session ended")}
         </p>
       </div>
 
