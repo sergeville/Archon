@@ -36,7 +36,7 @@ class SessionSummary(BaseModel):
 # Initialize the PydanticAI agent
 session_summarizer = Agent(
     "anthropic:claude-sonnet-4-5-20250929",  # Using Claude Sonnet 4.5 for best quality
-    result_type=SessionSummary,
+    output_type=SessionSummary,
     system_prompt="""
     You are a session summarization agent for Archon, a multi-agent knowledge management system.
 
@@ -113,4 +113,4 @@ Generate a comprehensive summary covering what was accomplished, decisions made,
     # Run the AI agent
     result = await session_summarizer.run(prompt)
 
-    return result.data
+    return result.output

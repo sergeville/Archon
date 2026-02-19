@@ -223,32 +223,94 @@ class PatternService:
 
     async def extract_patterns_from_session(self, session_id: UUID) -> List[dict]:
         """
-        Analyze session events to identify potential reusable patterns.
-        
-        This uses AI to look for sequences of actions that led to success.
+        Analyze session events and extract reusable patterns using AI.
+
+        Calls PydanticAI to identify recurring sequences of actions, decisions,
+        and outcomes, then stores each candidate via harvest_pattern().
+
+        Args:
+            session_id: UUID of the session to analyze
+
+        Returns:
+            List of created pattern dicts (empty if no patterns found or session missing)
+        """
+        from .session_service import get_session_service
+        from ...agents.features.pattern_extractor import extract_patterns
+
+        session_service = get_session_service()
+        session = await session_service.get_session(session_id)
+
+        if not session:
+            logger.info(f"Session {session_id} not found — skipping extraction")
+            return []
+
+        events = session.get("events") or []
+        logger.info(
+            f"Extracting patterns from session {session_id} "
+            f"({len(events)} events, agent: {session.get('agent', 'unknown')})"
+        )
+
+        extracted = await extract_patterns(session, events)
+        logger.info(
+            f"AI identified {len(extracted.patterns)} pattern candidates "
+            f"— rationale: {extracted.rationale[:120]}"
+        )
+
+        created: List[dict] = []
+        for candidate in extracted.patterns:
+            if candidate.confidence < 0.6:
+                logger.debug(
+                    f"Skipping low-confidence pattern ({candidate.confidence:.2f}): "
+                    f"{candidate.description[:60]}"
+                )
+                continue
+
+            pattern = await self.harvest_pattern(
+                pattern_type=candidate.pattern_type,
+                domain=candidate.domain,
+                description=candidate.description,
+                action=candidate.action,
+                outcome=candidate.outcome,
+                context={"source_session_id": str(session_id)},
+                metadata={"confidence": candidate.confidence, "extracted_by": "pattern_extractor"},
+                created_by="pattern_extractor",
+            )
+            created.append(pattern)
+
+        logger.info(f"Stored {len(created)} patterns from session {session_id}")
+        return created
+
+    async def list_patterns(
+        self,
+        pattern_type: Optional[str] = None,
+        domain: Optional[str] = None,
+        limit: int = 50
+    ) -> List[dict]:
+        """
+        List patterns with optional filters.
+
+        Args:
+            pattern_type: Filter by type (success, failure, technical, process)
+            domain: Filter by domain
+            limit: Maximum results
+
+        Returns:
+            List of pattern dictionaries ordered by creation date descending
         """
         try:
-            from .session_service import get_session_service
-            session_service = get_session_service()
-            
-            session = await session_service.get_session(session_id)
-            if not session or not session.get('events'):
-                return []
+            query = self.supabase.table("archon_patterns").select("*")
 
-            events = session['events']
-            summary = session.get('summary', '')
+            if pattern_type:
+                query = query.eq("pattern_type", pattern_type)
+            if domain:
+                query = query.eq("domain", domain)
 
-            # Simple heuristic for now: look for decision_made followed by success in summary
-            # In a real implementation, we would send the event log to an LLM
-            logger.info(f"Analyzing {len(events)} events from session {session_id}")
-            
-            # Placeholder for AI analysis
-            # We'll implement the actual LLM call in Day 3
-            return []
+            response = query.order("created_at", desc=True).limit(limit).execute()
+            return response.data or []
 
         except Exception as e:
-            logger.error(f"Error extracting patterns: {e}")
-            return []
+            logger.error(f"Failed to list patterns: {e}", exc_info=True)
+            raise
 
     async def get_pattern_stats(self) -> dict:
         """Get global stats on learned patterns."""

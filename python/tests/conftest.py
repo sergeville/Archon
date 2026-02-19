@@ -4,7 +4,6 @@ import os
 from unittest.mock import MagicMock, patch
 
 import pytest
-from fastapi.testclient import TestClient
 
 # Set test environment - always override to ensure test isolation
 os.environ["TEST_MODE"] = "true"
@@ -16,30 +15,46 @@ os.environ["SUPABASE_SERVICE_KEY"] = "test-key"
 os.environ["ARCHON_SERVER_PORT"] = "8181"
 os.environ["ARCHON_MCP_PORT"] = "8051"
 os.environ["ARCHON_AGENTS_PORT"] = "8052"
+# Dummy AI provider keys — allows Agent() to initialise without a real connection
+os.environ.setdefault("ANTHROPIC_API_KEY", "test-anthropic-key")
+os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
 
-# Global patches that need to be active during module imports and app initialization
-# This ensures that any code that runs during FastAPI app startup is mocked
-mock_client = MagicMock()
-mock_table = MagicMock()
-mock_select = MagicMock()
-mock_execute = MagicMock()
-mock_execute.data = []
-mock_select.execute.return_value = mock_execute
-mock_select.eq.return_value = mock_select
-mock_select.order.return_value = mock_select
-mock_table.select.return_value = mock_select
-mock_client.table.return_value = mock_table
+def _make_mock_client() -> MagicMock:
+    """Build a mock Supabase client with chaining support."""
+    mock_client = MagicMock()
+    mock_table = MagicMock()
+    mock_select = MagicMock()
+    mock_execute = MagicMock()
+    mock_execute.data = []
+    mock_select.execute.return_value = mock_execute
+    mock_select.eq.return_value = mock_select
+    mock_select.order.return_value = mock_select
+    mock_table.select.return_value = mock_select
+    mock_client.table.return_value = mock_table
+    return mock_client
 
-# Apply global patches immediately
-from unittest.mock import patch
-_global_patches = [
-    patch("supabase.create_client", return_value=mock_client),
-    patch("src.server.services.client_manager.get_supabase_client", return_value=mock_client),
-    patch("src.server.utils.get_supabase_client", return_value=mock_client),
-]
 
-for p in _global_patches:
-    p.start()
+@pytest.fixture(scope="session", autouse=True)
+def _global_db_patches():
+    """Session-scoped patches that keep DB calls mocked for the entire test run."""
+    mock_client = _make_mock_client()
+    patches = [
+        patch("supabase.create_client", return_value=mock_client),
+        patch("src.server.services.client_manager.get_supabase_client", return_value=mock_client),
+        patch("src.server.utils.get_supabase_client", return_value=mock_client),
+    ]
+    started = []
+    for p in patches:
+        try:
+            started.append(p.start())
+        except ModuleNotFoundError:
+            pass  # Module not installed in this environment; individual tests mock as needed
+    yield
+    for p in patches:
+        try:
+            p.stop()
+        except RuntimeError:
+            pass
 
 
 @pytest.fixture(autouse=True)
@@ -136,6 +151,7 @@ def mock_supabase_client():
 @pytest.fixture
 def client(mock_supabase_client):
     """FastAPI test client with mocked database."""
+    from fastapi.testclient import TestClient
     # Patch all the ways Supabase client can be created
     with patch(
         "src.server.services.client_manager.get_supabase_client",

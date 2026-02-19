@@ -7,8 +7,10 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from ..config.logfire_config import get_logger
 from ..services.pattern_service import get_pattern_service
 
+logger = get_logger(__name__)
 router = APIRouter(prefix="/api/patterns", tags=["patterns"])
 
 
@@ -56,6 +58,7 @@ async def create_pattern(request: PatternCreateRequest):
         )
         return {"success": True, "pattern": pattern}
     except Exception as e:
+        logger.error(f"Error creating pattern: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -73,6 +76,7 @@ async def record_observation(request: ObservationCreateRequest):
         )
         return {"success": True, "observation": observation}
     except Exception as e:
+        logger.error(f"Error recording observation: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -89,12 +93,57 @@ async def search_patterns(request: PatternSearchRequest):
         )
         return {"success": True, "patterns": patterns}
     except Exception as e:
+        logger.error(f"Error searching patterns: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("", response_model=dict)
+async def list_patterns(
+    pattern_type: Optional[str] = Query(None, description="Filter by type"),
+    domain: Optional[str] = Query(None, description="Filter by domain"),
+    limit: int = Query(50, ge=1, le=200, description="Max results"),
+):
+    """List patterns with optional filters."""
+    try:
+        service = get_pattern_service()
+        patterns = await service.list_patterns(
+            pattern_type=pattern_type,
+            domain=domain,
+            limit=limit
+        )
+        return {"success": True, "patterns": patterns, "count": len(patterns)}
+    except Exception as e:
+        logger.error(f"Error listing patterns: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/stats", response_model=dict)
+async def get_pattern_stats():
+    """Get global pattern statistics."""
+    try:
+        service = get_pattern_service()
+        stats = await service.get_pattern_stats()
+        return {"success": True, "stats": stats}
+    except Exception as e:
+        logger.error(f"Error getting pattern stats: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/extract/{session_id}", response_model=dict)
+async def extract_patterns_from_session(session_id: UUID):
+    """Analyze a session and extract reusable patterns from it."""
+    try:
+        service = get_pattern_service()
+        patterns = await service.extract_patterns_from_session(session_id)
+        return {"success": True, "patterns": patterns, "count": len(patterns)}
+    except Exception as e:
+        logger.error(f"Error extracting patterns from session {session_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{pattern_id}", response_model=dict)
 async def get_pattern(pattern_id: UUID):
-    """Get pattern details."""
+    """Get pattern details with observation stats."""
     try:
         service = get_pattern_service()
         pattern = await service.get_pattern(pattern_id)
@@ -104,4 +153,5 @@ async def get_pattern(pattern_id: UUID):
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Error getting pattern {pattern_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
