@@ -20,6 +20,8 @@
 
 ---
 
+<!-- Last reviewed: 2026-02-20. For the latest information and community support, see the GitHub Discussions and Contributing Guide linked below. -->
+
 ## 🎯 What is Archon?
 
 > Archon is currently in beta! Expect things to not work 100%, and please feel free to share any feedback and contribute with fixes/new features! Thank you to everyone for all the excitement we have for Archon already, as well as the bug reports, PRs, and discussions. It's a lot for our small team to get through but we're committed to addressing everything and making Archon into the best tool it possibly can be!
