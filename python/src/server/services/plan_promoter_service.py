@@ -9,23 +9,11 @@ import os
 import re
 from typing import Any
 
-from pydantic import BaseModel
-from pydantic_ai import Agent
+import json
 
 from ..config.logfire_config import get_logger
 
 logger = get_logger(__name__)
-
-
-class ExtractedTask(BaseModel):
-    title: str
-    description: str
-    priority: str
-    feature: str | None = None
-
-
-class TaskExtractionResult(BaseModel):
-    tasks: list[ExtractedTask]
 
 
 class PlanPromoterService:
@@ -119,53 +107,91 @@ class PlanPromoterService:
         except FileNotFoundError:
             raise FileNotFoundError(f"Plan file not found: {full_path}")
 
-    def _get_llm_model(self) -> str:
-        """Determine the LLM model string for PydanticAI based on available API keys."""
+    async def _get_api_key_and_provider(self) -> tuple[str, str, str]:
+        """Return (api_key, provider, model_name). Env vars take priority over Supabase."""
         anthropic_key = os.getenv("ANTHROPIC_API_KEY")
-        openai_key = os.getenv("OPENAI_API_KEY")
-
         if anthropic_key:
-            return "anthropic:claude-sonnet-4-6"
-        elif openai_key:
-            return "openai:gpt-4o"
-        else:
+            return anthropic_key, "anthropic", "claude-sonnet-4-6"
+
+        openai_key = os.getenv("OPENAI_API_KEY")
+        if openai_key:
+            return openai_key, "openai", "gpt-4o"
+
+        from ..services.credential_service import credential_service
+
+        provider_config = await credential_service.get_active_provider("llm")
+        provider = provider_config.get("provider", "openai")
+        api_key = provider_config.get("api_key", "")
+        chat_model = provider_config.get("chat_model", "")
+        model_name = chat_model or ("claude-sonnet-4-6" if provider == "anthropic" else "gpt-4o")
+
+        if not api_key:
             raise RuntimeError(
-                "No LLM API key found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in environment."
+                "No LLM API key found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in the .env file, "
+                "or configure your LLM credentials in Archon Settings."
             )
 
+        return api_key, provider, model_name
+
     async def _extract_tasks_with_ai(self, plan_content: str) -> list[dict[str, Any]]:
-        """Use PydanticAI to extract structured implementation tasks from plan content."""
-        model = self._get_llm_model()
+        """Extract structured tasks from plan content using the Anthropic or OpenAI SDK directly."""
+        api_key, provider, model_name = await self._get_api_key_and_provider()
 
-        agent: Agent[None, TaskExtractionResult] = Agent(
-            model=model,
-            result_type=TaskExtractionResult,
-            system_prompt=(
-                "You are a project management assistant. Extract 10-20 concrete implementation tasks "
-                "from the provided plan document.\n\n"
-                "For each task:\n"
-                "- title: Short imperative sentence (e.g., 'Create API endpoint for plan listing')\n"
-                "- description: Specific implementation details and acceptance criteria\n"
-                "- priority: One of: low, medium, high, critical\n"
-                "- feature: The phase or section name this task belongs to (optional)\n\n"
-                "Return tasks that collectively implement the entire plan. "
-                "Focus on concrete, actionable development tasks."
-            ),
+        prompt = (
+            "Extract 10-20 concrete implementation tasks from the following plan document. "
+            "Return ONLY a valid JSON array (no markdown, no explanation) where each element has:\n"
+            '- "title": short imperative sentence\n'
+            '- "description": specific implementation details and acceptance criteria\n'
+            '- "priority": one of low, medium, high, critical\n'
+            '- "feature": phase or section name (string or null)\n\n'
+            f"Plan document:\n\n{plan_content[:8000]}"
         )
 
-        result = await agent.run(
-            f"Extract implementation tasks from this plan document:\n\n{plan_content[:8000]}"
-        )
+        if provider == "anthropic":
+            import anthropic
 
-        return [
-            {
-                "title": task.title,
-                "description": task.description,
-                "priority": task.priority,
-                "feature": task.feature,
-            }
-            for task in result.data.tasks
-        ]
+            client = anthropic.AsyncAnthropic(api_key=api_key)
+            message = await client.messages.create(
+                model=model_name,
+                max_tokens=4096,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            raw = message.content[0].text
+        else:
+            from openai import AsyncOpenAI
+
+            client = AsyncOpenAI(api_key=api_key)
+            response = await client.chat.completions.create(
+                model=model_name,
+                max_tokens=4096,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            raw = response.choices[0].message.content or ""
+
+        # Strip optional markdown code fences
+        raw = raw.strip()
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[-1]
+            if raw.endswith("```"):
+                raw = raw[: raw.rfind("```")]
+
+        tasks = json.loads(raw)
+        if not isinstance(tasks, list):
+            raise ValueError(f"Expected JSON array, got {type(tasks).__name__}")
+
+        valid_priorities = {"low", "medium", "high", "critical"}
+        result = []
+        for t in tasks:
+            priority = t.get("priority", "medium")
+            if priority not in valid_priorities:
+                priority = "medium"
+            result.append({
+                "title": str(t.get("title", "Untitled task")),
+                "description": str(t.get("description", "")),
+                "priority": priority,
+                "feature": t.get("feature") or None,
+            })
+        return result
 
     async def promote_plan(self, plan_path: str, plan_name: str) -> tuple[bool, dict[str, Any]]:
         """
