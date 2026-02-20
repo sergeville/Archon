@@ -1,4 +1,4 @@
-import { Clipboard, Edit, Trash2 } from "lucide-react";
+import { Bot, Clipboard, Edit, Trash2 } from "lucide-react";
 import type React from "react";
 import { useToast } from "@/features/shared/hooks/useToast";
 import { cn, glassmorphism } from "../../../ui/primitives/styles";
@@ -9,6 +9,7 @@ interface TaskCardActionsProps {
   taskTitle: string;
   onEdit: () => void;
   onDelete: () => void;
+  onSendToAgent?: () => void;
   isDeleting?: boolean;
 }
 
@@ -17,6 +18,7 @@ export const TaskCardActions: React.FC<TaskCardActionsProps> = ({
   taskTitle,
   onEdit,
   onDelete,
+  onSendToAgent,
   isDeleting = false,
 }) => {
   const { showToast } = useToast();
@@ -89,6 +91,29 @@ export const TaskCardActions: React.FC<TaskCardActionsProps> = ({
           <Edit className="w-3 h-3" />
         </button>
       </SimpleTooltip>
+
+      {onSendToAgent && (
+        <SimpleTooltip content="Send to Agent">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSendToAgent();
+            }}
+            className={cn(
+              "w-5 h-5 rounded-full flex items-center justify-center",
+              "transition-all duration-300",
+              "bg-teal-100/80 dark:bg-teal-500/20",
+              "text-teal-600 dark:text-teal-400",
+              "hover:bg-teal-200 dark:hover:bg-teal-500/30",
+              "hover:shadow-[0_0_10px_rgba(20,184,166,0.3)]",
+            )}
+            aria-label={`Send ${taskTitle} to Agent`}
+          >
+            <Bot className="w-3 h-3" />
+          </button>
+        </SimpleTooltip>
+      )}
 
       <SimpleTooltip content="Copy Task ID">
         <button

@@ -9,6 +9,7 @@ interface BoardViewProps {
   onTaskReorder: (taskId: string, targetIndex: number, status: Task["status"]) => void;
   onTaskEdit?: (task: Task) => void;
   onTaskDelete?: (task: Task) => void;
+  onTaskSendToAgent?: (task: Task) => void;
 }
 
 export const BoardView = ({
@@ -18,6 +19,7 @@ export const BoardView = ({
   onTaskReorder,
   onTaskEdit,
   onTaskDelete,
+  onTaskSendToAgent,
 }: BoardViewProps) => {
   const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null);
 
@@ -49,6 +51,7 @@ export const BoardView = ({
             onTaskReorder={onTaskReorder}
             onTaskEdit={onTaskEdit}
             onTaskDelete={onTaskDelete}
+            onTaskSendToAgent={onTaskSendToAgent}
             hoveredTaskId={hoveredTaskId}
             onTaskHover={setHoveredTaskId}
           />

@@ -20,6 +20,7 @@ export interface TaskCardProps {
   onTaskReorder: (taskId: string, targetIndex: number, status: Task["status"]) => void;
   onEdit?: (task: Task) => void; // Optional edit handler
   onDelete?: (task: Task) => void; // Optional delete handler
+  onSendToAgent?: (task: Task) => void; // Optional send-to-agent handler
   hoveredTaskId?: string | null;
   onTaskHover?: (taskId: string | null) => void;
   selectedTasks?: Set<string>;
@@ -33,6 +34,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onTaskReorder,
   onEdit,
   onDelete,
+  onSendToAgent,
   hoveredTaskId,
   onTaskHover,
   selectedTasks,
@@ -61,6 +63,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       // Delete task - no handler provided
     }
   }, [onDelete, task]);
+
+  const handleSendToAgent = useCallback(() => {
+    onSendToAgent?.(task);
+  }, [onSendToAgent, task]);
 
   const handlePriorityChange = useCallback(
     (priority: TaskPriority) => {
@@ -186,6 +192,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 taskTitle={task.title}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onSendToAgent={onSendToAgent ? handleSendToAgent : undefined}
                 isDeleting={false}
               />
             </div>

@@ -23,6 +23,7 @@ import { SharedContextPage } from './pages/SharedContextPage';
 import { HandoffsPage } from './pages/HandoffsPage';
 import { TestRunnerPage } from './pages/TestRunnerPage';
 import { PlanPromoterPage } from './pages/PlanPromoterPage';
+import { AgentExecutionPage } from './pages/AgentExecutionPage';
 import { DisconnectScreenOverlay } from './components/DisconnectScreenOverlay';
 import { ErrorBoundaryWithBugReport } from './components/bug-report/ErrorBoundaryWithBugReport';
 import { MigrationBanner } from './components/ui/MigrationBanner';
@@ -57,6 +58,7 @@ const AppRoutes = () => {
           <Route path="/projects/:projectId" element={<ProjectPage />} />
           <Route path="/projects/:projectId/docs" element={<ProjectPage />} />
           <Route path="/projects/:projectId/docs/:docId" element={<ProjectPage />} />
+          <Route path="/projects/:projectId/agent-run/:workOrderId" element={<AgentExecutionPage />} />
         </>
       ) : (
         <Route path="/projects" element={<Navigate to="/" replace />} />

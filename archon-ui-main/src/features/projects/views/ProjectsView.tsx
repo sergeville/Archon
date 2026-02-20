@@ -1,8 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Activity, CheckCircle2, FileText, List, ListTodo, Pin } from "lucide-react";
+import { Activity, Bot, CheckCircle2, FileText, List, ListTodo, Pin } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useSettings } from "@/contexts/SettingsContext";
 import { useStaggeredEntrance } from "../../../hooks/useStaggeredEntrance";
 import { isOptimistic } from "../../shared/utils/optimistic";
 import { DeleteConfirmModal } from "../../ui/components/DeleteConfirmModal";
@@ -13,9 +14,11 @@ import { cn } from "../../ui/primitives/styles";
 import { NewProjectModal } from "../components/NewProjectModal";
 import { ProjectHeader } from "../components/ProjectHeader";
 import { ProjectList } from "../components/ProjectList";
+import { SendToAgentModal } from "../components/SendToAgentModal";
 import { WhiteboardView } from "../components/WhiteboardView";
 import { DocsTab } from "../documents/DocsTab";
 import { projectKeys, useDeleteProject, useProjects, useUpdateProject } from "../hooks/useProjectQueries";
+import { useProjectTasks } from "../tasks/hooks/useTaskQueries";
 import { useTaskCounts } from "../tasks/hooks";
 import { TasksTab } from "../tasks/TasksTab";
 import type { Project } from "../types";
@@ -47,6 +50,8 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  const { agentWorkOrdersEnabled } = useSettings();
+
   // State management
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [activeTab, setActiveTab] = useState(docId ? "docs" : "tasks");
@@ -55,6 +60,7 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
   const [searchQuery, setSearchQuery] = useState("");
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isSendToAgentModalOpen, setIsSendToAgentModalOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<{
     id: string;
     title: string;
@@ -63,6 +69,9 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
   // React Query hooks
   const { data: projects = [], isLoading: isLoadingProjects, error: projectsError } = useProjects();
   const { data: taskCounts = {}, refetch: refetchTaskCounts } = useTaskCounts();
+  const { data: projectTasks = [] } = useProjectTasks(
+    agentWorkOrdersEnabled ? selectedProject?.id : undefined,
+  );
 
   // Mutations
   const updateProjectMutation = useUpdateProject();
@@ -246,7 +255,19 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
             <motion.div variants={itemVariants} className="relative">
               {/* PillNavigation centered, View Toggle on right */}
               <div className="flex items-center justify-between mb-6">
-                <div className="flex-1" />
+                <div className="flex-1 flex justify-start">
+                  {agentWorkOrdersEnabled && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsSendToAgentModalOpen(true)}
+                      className="inline-flex items-center gap-1.5 text-teal-600 dark:text-teal-400 border-teal-400/40 hover:bg-teal-500/10"
+                    >
+                      <Bot className="w-4 h-4" />
+                      Run with Agent
+                    </Button>
+                  )}
+                </div>
                 <PillNavigation
                   items={[
                     { id: "docs", label: "Docs", icon: <FileText className="w-4 h-4" /> },
@@ -272,7 +293,7 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
                     <DocsTab project={selectedProject} />
                   )
                 )}
-                {activeTab === "tasks" && <TasksTab projectId={selectedProject.id} />}
+                {activeTab === "tasks" && <TasksTab projectId={selectedProject.id} projectName={selectedProject.title} />}
               </div>
             </motion.div>
           )}
@@ -352,7 +373,7 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
                 {/* Tab Content */}
                 <div>
                   {activeTab === "docs" && <DocsTab project={selectedProject} />}
-                  {activeTab === "tasks" && <TasksTab projectId={selectedProject.id} />}
+                  {activeTab === "tasks" && <TasksTab projectId={selectedProject.id} projectName={selectedProject.title} />}
                 </div>
               </>
             )}
@@ -375,6 +396,16 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
           type="project"
           open={showDeleteConfirm}
           onOpenChange={setShowDeleteConfirm}
+        />
+      )}
+
+      {selectedProject && isSendToAgentModalOpen && (
+        <SendToAgentModal
+          open={isSendToAgentModalOpen}
+          onClose={() => setIsSendToAgentModalOpen(false)}
+          projectId={selectedProject.id}
+          projectName={selectedProject.title}
+          tasks={projectTasks.filter((t) => t.status === "todo" || t.status === "doing")}
         />
       )}
     </motion.div>

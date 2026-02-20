@@ -2,9 +2,11 @@ import { LayoutGrid, Plus, Table } from "lucide-react";
 import { useCallback, useState } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import { useSettings } from "@/contexts/SettingsContext";
 import { DeleteConfirmModal } from "../../ui/components/DeleteConfirmModal";
 import { Button, Card } from "../../ui/primitives";
 import { cn, glassmorphism } from "../../ui/primitives/styles";
+import { SendToAgentModal } from "../components/SendToAgentModal";
 import { TaskEditModal } from "./components/TaskEditModal";
 import { useDeleteTask, useProjectTasks, useUpdateTask } from "./hooks";
 import type { Task } from "./types";
@@ -13,14 +15,18 @@ import { BoardView, TableView } from "./views";
 
 interface TasksTabProps {
   projectId: string;
+  projectName?: string;
 }
 
-export const TasksTab = ({ projectId }: TasksTabProps) => {
+export const TasksTab = ({ projectId, projectName = "" }: TasksTabProps) => {
   const [viewMode, setViewMode] = useState<"table" | "board">("board");
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [sendToAgentTask, setSendToAgentTask] = useState<Task | null>(null);
+
+  const { agentWorkOrdersEnabled } = useSettings();
 
   // Fetch tasks using TanStack Query
   const { data: tasks = [], isLoading: isLoadingTasks } = useProjectTasks(projectId);
@@ -196,6 +202,7 @@ export const TasksTab = ({ projectId }: TasksTabProps) => {
               onTaskReorder={handleTaskReorder}
               onTaskEdit={openEditModal}
               onTaskDelete={openDeleteModal}
+              onTaskSendToAgent={agentWorkOrdersEnabled ? setSendToAgentTask : undefined}
             />
           )}
         </div>
@@ -216,6 +223,17 @@ export const TasksTab = ({ projectId }: TasksTabProps) => {
           type="task"
           size="compact"
         />
+
+        {/* Send to Agent Modal (task-level) */}
+        {sendToAgentTask && (
+          <SendToAgentModal
+            open={!!sendToAgentTask}
+            onClose={() => setSendToAgentTask(null)}
+            projectId={projectId}
+            projectName={projectName}
+            tasks={[sendToAgentTask]}
+          />
+        )}
       </div>
     </DndProvider>
   );

@@ -15,6 +15,7 @@ interface KanbanColumnProps {
   onTaskReorder: (taskId: string, targetIndex: number, status: Task["status"]) => void;
   onTaskEdit?: (task: Task) => void;
   onTaskDelete?: (task: Task) => void;
+  onTaskSendToAgent?: (task: Task) => void;
   hoveredTaskId: string | null;
   onTaskHover: (taskId: string | null) => void;
 }
@@ -28,6 +29,7 @@ export const KanbanColumn = ({
   onTaskReorder,
   onTaskEdit,
   onTaskDelete,
+  onTaskSendToAgent,
   hoveredTaskId,
   onTaskHover,
 }: KanbanColumnProps) => {
@@ -119,6 +121,7 @@ export const KanbanColumn = ({
             onTaskReorder={onTaskReorder}
             onEdit={onTaskEdit}
             onDelete={onTaskDelete}
+            onSendToAgent={onTaskSendToAgent}
             hoveredTaskId={hoveredTaskId}
             onTaskHover={onTaskHover}
           />
