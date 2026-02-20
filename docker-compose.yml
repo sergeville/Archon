@@ -33,6 +33,7 @@ services:
       - AGENT_WORK_ORDERS_PORT=${AGENT_WORK_ORDERS_PORT:-8053}
       - AGENTS_ENABLED=${AGENTS_ENABLED:-false}
       - ARCHON_HOST=${HOST:-localhost}
+      - DOCUMENTS_BASE_PATH=${DOCUMENTS_BASE_PATH:-/documents}
     networks:
       - app-network
     volumes:
@@ -45,6 +46,7 @@ services:
       - ./python/src:/app/src # Mount source code for hot reload
       - ./python/tests:/app/tests # Mount tests for UI test execution
       - ./migration:/app/migration # Mount migration files for version tracking
+      - ${HOME}/Documents:/documents:ro # Plan Promoter: read-only access to ~/Documents/
     extra_hosts:
       - "host.docker.internal:host-gateway"
     command:

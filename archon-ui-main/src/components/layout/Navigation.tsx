@@ -1,4 +1,4 @@
-import { ListTodo, BookOpen, Bot, FlaskConical, Palette, Settings, MessageSquare, Activity, ArrowRightLeft, Database, Users } from "lucide-react";
+import { ListTodo, BookOpen, Bot, FlaskConical, Map, Palette, Settings, MessageSquare, Activity, ArrowRightLeft, Database, Users } from "lucide-react";
 import type React from "react";
 import { Link, useLocation } from "react-router-dom";
 // TEMPORARY: Use old SettingsContext until settings are migrated
@@ -74,6 +74,12 @@ export function Navigation({ className }: NavigationProps) {
       path: "/projects/6cc3ca3f-ad32-4cbf-98b3-975abbbddeee/docs/8aeb549b-4cd1-4ff8-adda-87b0afbca9da",
       icon: <MessageSquare className="h-5 w-5" />,
       label: "Swarm Whiteboard",
+      enabled: true,
+    },
+    {
+      path: "/plan-promoter",
+      icon: <Map className="h-5 w-5" />,
+      label: "Plan Promoter",
       enabled: true,
     },
     {

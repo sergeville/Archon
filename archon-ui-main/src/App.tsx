@@ -22,6 +22,7 @@ import { AgentsPage } from './pages/AgentsPage';
 import { SharedContextPage } from './pages/SharedContextPage';
 import { HandoffsPage } from './pages/HandoffsPage';
 import { TestRunnerPage } from './pages/TestRunnerPage';
+import { PlanPromoterPage } from './pages/PlanPromoterPage';
 import { DisconnectScreenOverlay } from './components/DisconnectScreenOverlay';
 import { ErrorBoundaryWithBugReport } from './components/bug-report/ErrorBoundaryWithBugReport';
 import { MigrationBanner } from './components/ui/MigrationBanner';
@@ -44,6 +45,7 @@ const AppRoutes = () => {
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/mcp" element={<MCPPage />} />
       <Route path="/test-runner" element={<TestRunnerPage />} />
+      <Route path="/plan-promoter" element={<PlanPromoterPage />} />
       {styleGuideEnabled ? (
         <Route path="/style-guide" element={<StyleGuidePage />} />
       ) : (
