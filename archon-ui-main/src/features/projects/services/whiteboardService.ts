@@ -6,10 +6,10 @@
 
 import { callAPIWithETag } from "@/features/shared/api/apiClient";
 import type {
-  WhiteboardResponse,
   ActiveSessionsResponse,
   ActiveTasksResponse,
   RecentEventsResponse,
+  WhiteboardResponse,
 } from "../types/whiteboard";
 
 /**
@@ -28,9 +28,7 @@ export const whiteboardService = {
    * Get active sessions
    */
   async getActiveSessions(): Promise<ActiveSessionsResponse> {
-    const response = await callAPIWithETag<ActiveSessionsResponse>(
-      "/api/whiteboard/active-sessions",
-    );
+    const response = await callAPIWithETag<ActiveSessionsResponse>("/api/whiteboard/active-sessions");
     return response;
   },
 
@@ -38,9 +36,7 @@ export const whiteboardService = {
    * Get active tasks
    */
   async getActiveTasks(): Promise<ActiveTasksResponse> {
-    const response = await callAPIWithETag<ActiveTasksResponse>(
-      "/api/whiteboard/active-tasks",
-    );
+    const response = await callAPIWithETag<ActiveTasksResponse>("/api/whiteboard/active-tasks");
     return response;
   },
 
@@ -49,9 +45,7 @@ export const whiteboardService = {
    * @param limit - Maximum number of events to return (default: 20)
    */
   async getRecentEvents(limit = 20): Promise<RecentEventsResponse> {
-    const response = await callAPIWithETag<RecentEventsResponse>(
-      `/api/whiteboard/recent-events?limit=${limit}`,
-    );
+    const response = await callAPIWithETag<RecentEventsResponse>(`/api/whiteboard/recent-events?limit=${limit}`);
     return response;
   },
 
@@ -60,9 +54,7 @@ export const whiteboardService = {
    * @param projectId - Optional project ID filter
    */
   async getAllTasks(projectId?: string): Promise<ActiveTasksResponse> {
-    const url = projectId
-      ? `/api/whiteboard/all-tasks?project_id=${projectId}`
-      : `/api/whiteboard/all-tasks`;
+    const url = projectId ? `/api/whiteboard/all-tasks?project_id=${projectId}` : `/api/whiteboard/all-tasks`;
     const response = await callAPIWithETag<ActiveTasksResponse>(url);
     return response;
   },

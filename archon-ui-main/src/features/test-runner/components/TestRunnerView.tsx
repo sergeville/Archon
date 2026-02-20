@@ -81,9 +81,7 @@ export function TestRunnerView() {
           <span className="text-zinc-500">
             Total: <span className="text-zinc-300 font-mono">{total}</span>
           </span>
-          {running > 0 && (
-            <span className="text-blue-400 font-mono animate-pulse">{running} running</span>
-          )}
+          {running > 0 && <span className="text-blue-400 font-mono animate-pulse">{running} running</span>}
           {passed > 0 && (
             <span className="text-green-400">
               ✓ <span className="font-mono">{passed}</span> passed
@@ -99,9 +97,7 @@ export function TestRunnerView() {
               △ <span className="font-mono">{skipped}</span> skipped
             </span>
           )}
-          {summary?.duration !== undefined && (
-            <span className="text-zinc-500 ml-auto">{summary.duration}s</span>
-          )}
+          {summary?.duration !== undefined && <span className="text-zinc-500 ml-auto">{summary.duration}s</span>}
         </div>
       )}
 

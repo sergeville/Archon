@@ -135,13 +135,38 @@ class AgentCLIExecutor:
                 stdin=asyncio.subprocess.PIPE if prompt_text else None,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                limit=10 * 1024 * 1024,  # 10MB — Claude can write large files in a single JSON line
             )
 
+            # Write stdin before streaming starts (prompt is the full input)
+            if prompt_text and process.stdin:
+                process.stdin.write(prompt_text.encode())
+                await process.stdin.drain()
+                process.stdin.close()
+
+            stdout_lines: list[str] = []
+            stderr_data: list[bytes] = []
+
+            async def _stream_stdout() -> None:
+                assert process.stdout is not None
+                while True:
+                    line = await process.stdout.readline()
+                    if not line:
+                        break
+                    line_str = line.decode().strip()
+                    if line_str:
+                        stdout_lines.append(line_str)
+                        if work_order_id:
+                            self._emit_cli_output(line_str, work_order_id)
+
+            async def _read_stderr() -> None:
+                assert process.stderr is not None
+                stderr_data.append(await process.stderr.read())
+
             try:
-                # Pass prompt via stdin if provided
-                stdin_data = prompt_text.encode() if prompt_text else None
-                stdout, stderr = await asyncio.wait_for(
-                    process.communicate(input=stdin_data), timeout=timeout
+                await asyncio.wait_for(
+                    asyncio.gather(_stream_stdout(), _read_stderr(), process.wait()),
+                    timeout=timeout,
                 )
             except TimeoutError:
                 process.kill()
@@ -165,8 +190,8 @@ class AgentCLIExecutor:
             duration = time.time() - start_time
 
             # Decode output
-            stdout_text = stdout.decode() if stdout else ""
-            stderr_text = stderr.decode() if stderr else ""
+            stdout_text = "\n".join(stdout_lines)
+            stderr_text = stderr_data[0].decode() if stderr_data else ""
 
             # Save output artifacts if enabled
             if work_order_id and stdout_text:
@@ -256,6 +281,76 @@ class AgentCLIExecutor:
                 error_message=str(e),
                 duration_seconds=duration,
             )
+
+    def _emit_cli_output(self, line: str, work_order_id: str) -> None:
+        """Parse a JSONL line from Claude CLI and emit human-readable log entries.
+
+        Extracts text from assistant messages, tool calls, tool results, and
+        final results, routing each to the SSE log buffer via structured logging.
+
+        Args:
+            line: A single JSONL line from Claude CLI stdout
+            work_order_id: Work order ID for log routing
+        """
+        try:
+            data = json.loads(line)
+        except json.JSONDecodeError:
+            return
+
+        msg_type = data.get("type", "")
+
+        if msg_type == "assistant":
+            message = data.get("message", {})
+            content = message.get("content", [])
+            for block in content:
+                block_type = block.get("type", "")
+                if block_type == "text":
+                    text = block.get("text", "").strip()
+                    if text:
+                        self._logger.info(
+                            "cli_output",
+                            work_order_id=work_order_id,
+                            output=text,
+                            cli_type="assistant",
+                        )
+                elif block_type == "tool_use":
+                    name = block.get("name", "unknown")
+                    input_data = block.get("input", {})
+                    first_val = next(iter(input_data.values()), "") if input_data else ""
+                    first_val_str = str(first_val)[:200]
+                    self._logger.info(
+                        "cli_output",
+                        work_order_id=work_order_id,
+                        output=f"[{name}] {first_val_str}",
+                        cli_type="tool_use",
+                    )
+
+        elif msg_type == "tool_result":
+            content = data.get("content", [])
+            text_parts: list[str] = []
+            for block in content:
+                if isinstance(block, dict) and block.get("type") == "text":
+                    text_parts.append(block.get("text", ""))
+                elif isinstance(block, str):
+                    text_parts.append(block)
+            text = " ".join(text_parts)[:500].strip()
+            if text:
+                self._logger.info(
+                    "cli_output",
+                    work_order_id=work_order_id,
+                    output=text,
+                    cli_type="tool_result",
+                )
+
+        elif msg_type == "result":
+            result = str(data.get("result", ""))[:500]
+            if result:
+                self._logger.info(
+                    "cli_output",
+                    work_order_id=work_order_id,
+                    output=result,
+                    cli_type="result",
+                )
 
     def _save_prompt(self, prompt_text: str, work_order_id: str) -> Path | None:
         """Save prompt to file for debugging

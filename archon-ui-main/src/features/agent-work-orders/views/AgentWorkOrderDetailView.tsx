@@ -5,16 +5,17 @@
  * logs, and full metadata.
  */
 
+import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/features/ui/primitives/button";
 import { Card } from "@/features/ui/primitives/card";
 import { RealTimeStats } from "../components/RealTimeStats";
 import { StepHistoryCard } from "../components/StepHistoryCard";
 import { WorkflowStepButton } from "../components/WorkflowStepButton";
-import { useStepHistory, useWorkOrder } from "../hooks/useAgentWorkOrderQueries";
+import { agentWorkOrderKeys, useStepHistory, useWorkOrder } from "../hooks/useAgentWorkOrderQueries";
 import { useAgentWorkOrdersStore } from "../state/agentWorkOrdersStore";
 import type { WorkflowStep } from "../types";
 
@@ -33,6 +34,7 @@ const ALL_WORKFLOW_STEPS: WorkflowStep[] = [
 export function AgentWorkOrderDetailView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [showDetails, setShowDetails] = useState(false);
   const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
 
@@ -41,6 +43,15 @@ export function AgentWorkOrderDetailView() {
 
   // Get live progress from SSE for total steps count
   const liveProgress = useAgentWorkOrdersStore((s) => (id ? s.liveProgress[id] : undefined));
+
+  // Invalidate step history and work order when SSE reports a new step or status change.
+  // stepNumber and status are triggers, not consumed inside the effect.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional trigger-only deps
+  useEffect(() => {
+    if (!id) return;
+    queryClient.invalidateQueries({ queryKey: agentWorkOrderKeys.stepHistory(id) });
+    queryClient.invalidateQueries({ queryKey: agentWorkOrderKeys.detail(id) });
+  }, [liveProgress?.stepNumber, liveProgress?.status, id, queryClient]);
 
   /**
    * Toggle step expansion
@@ -145,8 +156,9 @@ export function AgentWorkOrderDetailView() {
               <div key={stepName} className="flex items-center">
                 <WorkflowStepButton
                   isCompleted={isCompleted}
-                  isActive={isActive}
+                  isActive={!!isActive}
                   stepName={stepName}
+                  stepStartTime={isActive ? executedStep?.timestamp : undefined}
                   color="cyan"
                   size={50}
                 />
@@ -298,7 +310,8 @@ export function AgentWorkOrderDetailView() {
                       <div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">Steps Completed</p>
                         <p className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">
-                          {stepHistory.steps.filter((s) => s.success).length} / {liveProgress?.totalSteps ?? stepHistory.steps.length}
+                          {stepHistory.steps.filter((s) => s.success).length} /{" "}
+                          {liveProgress?.totalSteps ?? stepHistory.steps.length}
                         </p>
                       </div>
                     </div>

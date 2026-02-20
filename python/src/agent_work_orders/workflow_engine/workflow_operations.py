@@ -17,7 +17,7 @@ from .agent_names import (
     PLANNER,
     PR_CREATOR,
     REVIEWER,
-    ORCHESTRATOR = "Orchestrator",
+    ORCHESTRATOR,
 )
 
 logger = get_logger(__name__)

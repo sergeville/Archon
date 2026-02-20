@@ -1,9 +1,9 @@
 import { ArrowLeft, Bot } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { cn } from "@/features/ui/primitives/styles";
-import type { Task } from "../tasks/types";
-import { useProjectTasks } from "../tasks/hooks/useTaskQueries";
 import { AgentActivityPanel } from "../components/AgentActivityPanel";
+import { useProjectTasks } from "../tasks/hooks/useTaskQueries";
+import type { Task } from "../tasks/types";
 
 const PRIORITY_COLORS: Record<string, string> = {
   critical: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
@@ -43,9 +43,7 @@ function ReadOnlyTaskCard({ task }: { task: Task }) {
       )}
       <div className="flex items-center gap-1.5 mt-2">
         <span className="text-[10px] text-gray-500 dark:text-gray-500 capitalize">{task.status}</span>
-        {task.feature && (
-          <span className="text-[10px] text-gray-400 dark:text-gray-500">· {task.feature}</span>
-        )}
+        {task.feature && <span className="text-[10px] text-gray-400 dark:text-gray-500">· {task.feature}</span>}
       </div>
     </div>
   );
@@ -55,6 +53,10 @@ export function AgentExecutionView() {
   const { projectId, workOrderId } = useParams<{ projectId: string; workOrderId: string }>();
   const navigate = useNavigate();
   const { data: tasks = [] } = useProjectTasks(projectId);
+
+  if (!projectId || !workOrderId) {
+    return <Navigate to="/projects" replace />;
+  }
 
   const handleBackToProject = () => navigate(`/projects/${projectId}`);
 
@@ -90,9 +92,7 @@ export function AgentExecutionView() {
 
         {/* Right panel: agent activity */}
         <div className="flex-1 min-w-0">
-          {workOrderId && (
-            <AgentActivityPanel workOrderId={workOrderId} onBackToProject={handleBackToProject} />
-          )}
+          {workOrderId && <AgentActivityPanel workOrderId={workOrderId} onBackToProject={handleBackToProject} />}
         </div>
       </div>
     </div>

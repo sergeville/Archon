@@ -26,6 +26,7 @@ from ..models import (
     GitHubRepositoryVerificationRequest,
     GitHubRepositoryVerificationResponse,
     GitProgressSnapshot,
+    RiskLevel,
     StepHistory,
     UpdateRepositoryRequest,
 )
@@ -185,6 +186,9 @@ async def create_agent_work_order(
             "git_commit_count": 0,
             "git_files_changed": 0,
             "error_message": None,
+            "risk_level": request.risk_level,
+            "title": request.title,
+            "dry_run": request.dry_run,
         }
 
         # Save to repository
@@ -205,6 +209,7 @@ async def create_agent_work_order(
                 user_request=request.user_request,
                 selected_commands=request.selected_commands,
                 github_issue_number=request.github_issue_number,
+                dry_run=request.dry_run,
             )
             except Exception as e:
                 # Catch any exceptions that weren't handled by the orchestrator

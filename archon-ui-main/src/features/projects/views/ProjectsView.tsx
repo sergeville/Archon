@@ -18,8 +18,8 @@ import { SendToAgentModal } from "../components/SendToAgentModal";
 import { WhiteboardView } from "../components/WhiteboardView";
 import { DocsTab } from "../documents/DocsTab";
 import { projectKeys, useDeleteProject, useProjects, useUpdateProject } from "../hooks/useProjectQueries";
-import { useProjectTasks } from "../tasks/hooks/useTaskQueries";
 import { useTaskCounts } from "../tasks/hooks";
+import { useProjectTasks } from "../tasks/hooks/useTaskQueries";
 import { TasksTab } from "../tasks/TasksTab";
 import type { Project } from "../types";
 
@@ -69,9 +69,7 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
   // React Query hooks
   const { data: projects = [], isLoading: isLoadingProjects, error: projectsError } = useProjects();
   const { data: taskCounts = {}, refetch: refetchTaskCounts } = useTaskCounts();
-  const { data: projectTasks = [] } = useProjectTasks(
-    agentWorkOrdersEnabled ? selectedProject?.id : undefined,
-  );
+  const { data: projectTasks = [] } = useProjectTasks(agentWorkOrdersEnabled ? selectedProject?.id : undefined);
 
   // Mutations
   const updateProjectMutation = useUpdateProject();
@@ -85,7 +83,7 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
       if (!query) return true;
 
       // Handle negation operator (!)
-      if (query.startsWith('!')) {
+      if (query.startsWith("!")) {
         const term = query.substring(1).toLowerCase();
         if (!term) return true; // Just '!' shows everything
         return !project.title.toLowerCase().includes(term);
@@ -153,12 +151,12 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
     if (selectedProject) {
       document.title = `${selectedProject.title} - Archon`;
     } else {
-      document.title = 'Projects - Archon';
+      document.title = "Projects - Archon";
     }
 
     // Cleanup: reset title when component unmounts
     return () => {
-      document.title = 'Archon - Knowledge Engine';
+      document.title = "Archon - Knowledge Engine";
     };
   }, [selectedProject]);
 
@@ -286,14 +284,11 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
 
               {/* Tab content */}
               <div>
-                {activeTab === "docs" && (
-                  isViewingWhiteboard ? (
-                    <WhiteboardView />
-                  ) : (
-                    <DocsTab project={selectedProject} />
-                  )
+                {activeTab === "docs" &&
+                  (isViewingWhiteboard ? <WhiteboardView /> : <DocsTab project={selectedProject} />)}
+                {activeTab === "tasks" && (
+                  <TasksTab projectId={selectedProject.id} projectName={selectedProject.title} />
                 )}
-                {activeTab === "tasks" && <TasksTab projectId={selectedProject.id} projectName={selectedProject.title} />}
               </div>
             </motion.div>
           )}
@@ -373,7 +368,9 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
                 {/* Tab Content */}
                 <div>
                   {activeTab === "docs" && <DocsTab project={selectedProject} />}
-                  {activeTab === "tasks" && <TasksTab projectId={selectedProject.id} projectName={selectedProject.title} />}
+                  {activeTab === "tasks" && (
+                    <TasksTab projectId={selectedProject.id} projectName={selectedProject.title} />
+                  )}
                 </div>
               </>
             )}

@@ -5,8 +5,8 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { whiteboardService } from "../services/whiteboardService";
 import { STALE_TIMES } from "@/features/shared/config/queryPatterns";
+import { whiteboardService } from "../services/whiteboardService";
 
 /**
  * Query key factory for whiteboard data
@@ -16,8 +16,7 @@ export const whiteboardKeys = {
   whiteboard: () => [...whiteboardKeys.all, "full"] as const,
   sessions: () => [...whiteboardKeys.all, "sessions"] as const,
   tasks: () => [...whiteboardKeys.all, "tasks"] as const,
-  events: (limit?: number) =>
-    [...whiteboardKeys.all, "events", limit] as const,
+  events: (limit?: number) => [...whiteboardKeys.all, "events", limit] as const,
 };
 
 /**

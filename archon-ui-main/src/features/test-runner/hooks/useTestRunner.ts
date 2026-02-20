@@ -23,9 +23,7 @@ export function useTestRunner(): UseTestRunnerReturn {
 
   const collect = useCallback(async () => {
     const data = await testRunnerService.collect(selectedSuite);
-    setTests(
-      data.tests.map((t) => ({ id: t.id, name: t.name, path: t.path, status: "pending" as TestStatus }))
-    );
+    setTests(data.tests.map((t) => ({ id: t.id, name: t.name, path: t.path, status: "pending" as TestStatus })));
     setSummary(null);
   }, [selectedSuite]);
 
@@ -61,9 +59,7 @@ export function useTestRunner(): UseTestRunnerReturn {
       const data = JSON.parse(event.data);
 
       if (data.type === "test_result") {
-        setTests((prev) =>
-          prev.map((t) => (t.id === data.id ? { ...t, status: data.status as TestStatus } : t))
-        );
+        setTests((prev) => prev.map((t) => (t.id === data.id ? { ...t, status: data.status as TestStatus } : t)));
       } else if (data.type === "summary") {
         setSummary({
           total: data.total,

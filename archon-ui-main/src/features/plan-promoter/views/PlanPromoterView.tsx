@@ -47,12 +47,9 @@ export function PlanPromoterView() {
             <p className="text-sm font-semibold text-yellow-300">Documents not accessible</p>
             <p className="text-xs text-gray-400 mt-1">{configError}</p>
             <p className="text-xs text-gray-500 mt-2">
-              Add{" "}
-              <code className="bg-black/30 px-1 rounded text-cyan-400">
-                {"- ${HOME}/Documents:/documents:ro"}
-              </code>{" "}
-              to the <code className="bg-black/30 px-1 rounded text-cyan-400">archon-server</code>{" "}
-              volumes in <code className="bg-black/30 px-1 rounded text-cyan-400">docker-compose.yml</code>.
+              Add <code className="bg-black/30 px-1 rounded text-cyan-400">{"- ${HOME}/Documents:/documents:ro"}</code>{" "}
+              to the <code className="bg-black/30 px-1 rounded text-cyan-400">archon-server</code> volumes in{" "}
+              <code className="bg-black/30 px-1 rounded text-cyan-400">docker-compose.yml</code>.
             </p>
           </div>
         </div>
@@ -72,9 +69,7 @@ export function PlanPromoterView() {
       {error && !isLoading && (
         <div className="flex items-center gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/30">
           <AlertTriangle className="h-5 w-5 text-red-400 shrink-0" />
-          <p className="text-sm text-red-300">
-            {error instanceof Error ? error.message : "Failed to load plans."}
-          </p>
+          <p className="text-sm text-red-300">{error instanceof Error ? error.message : "Failed to load plans."}</p>
         </div>
       )}
 

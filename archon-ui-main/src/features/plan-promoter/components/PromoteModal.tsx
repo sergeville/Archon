@@ -2,12 +2,7 @@ import { CheckCircle2, ExternalLink, Loader2, Rocket } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../ui/primitives/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "../../ui/primitives/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../ui/primitives/dialog";
 import { usePromotePlan } from "../hooks/usePlanPromoterQueries";
 import type { Plan, PromoteResult } from "../types";
 
@@ -66,18 +61,13 @@ export function PromoteModal({ plan, open, onOpenChange }: PromoteModalProps) {
           {!result && !promoteMutation.isPending && !promoteMutation.isError && (
             <div className="space-y-3">
               <p className="text-sm text-gray-600 dark:text-zinc-400">
-                This will create an Archon project and use AI to generate implementation tasks from
-                the plan document.
+                This will create an Archon project and use AI to generate implementation tasks from the plan document.
               </p>
               <div className="flex gap-2 justify-end">
                 <Button variant="outline" size="sm" onClick={handleClose}>
                   Cancel
                 </Button>
-                <Button
-                  size="sm"
-                  className="bg-cyan-600 hover:bg-cyan-700 text-white"
-                  onClick={handleConfirm}
-                >
+                <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 text-white" onClick={handleConfirm}>
                   <Rocket className="h-3.5 w-3.5 mr-1.5" />
                   Promote
                 </Button>
@@ -89,9 +79,7 @@ export function PromoteModal({ plan, open, onOpenChange }: PromoteModalProps) {
             <div className="flex items-center gap-3 py-4">
               <Loader2 className="h-5 w-5 animate-spin text-cyan-400 shrink-0" />
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  Generating tasks with AI…
-                </p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Generating tasks with AI…</p>
                 <p className="text-xs text-gray-500 dark:text-zinc-500 mt-0.5">
                   Reading plan and extracting implementation tasks
                 </p>
@@ -106,8 +94,7 @@ export function PromoteModal({ plan, open, onOpenChange }: PromoteModalProps) {
                 <div>
                   <p className="text-sm font-semibold text-green-300">Promotion complete!</p>
                   <p className="text-xs text-gray-400 mt-1">
-                    Created project with{" "}
-                    <span className="text-cyan-400 font-semibold">{result.tasks_created}</span> of{" "}
+                    Created project with <span className="text-cyan-400 font-semibold">{result.tasks_created}</span> of{" "}
                     <span className="text-cyan-400 font-semibold">{result.task_count}</span> AI-generated tasks.
                   </p>
                 </div>
@@ -140,11 +127,7 @@ export function PromoteModal({ plan, open, onOpenChange }: PromoteModalProps) {
                 <Button variant="outline" size="sm" onClick={handleClose}>
                   Close
                 </Button>
-                <Button
-                  size="sm"
-                  className="bg-cyan-600 hover:bg-cyan-700 text-white"
-                  onClick={handleConfirm}
-                >
+                <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 text-white" onClick={handleConfirm}>
                   Retry
                 </Button>
               </div>

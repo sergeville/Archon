@@ -1,4 +1,18 @@
-import { ListTodo, BookOpen, Bot, FlaskConical, Map, Palette, Settings, MessageSquare, Activity, ArrowRightLeft, Database, Users } from "lucide-react";
+import {
+  Activity,
+  ArrowRightLeft,
+  BookOpen,
+  Bot,
+  Clock,
+  Database,
+  FlaskConical,
+  ListTodo,
+  Map,
+  MessageSquare,
+  Palette,
+  Settings,
+  Users,
+} from "lucide-react";
 import type React from "react";
 import { Link, useLocation } from "react-router-dom";
 // TEMPORARY: Use old SettingsContext until settings are migrated
@@ -50,6 +64,12 @@ export function Navigation({ className }: NavigationProps) {
       path: "/sessions",
       icon: <Activity className="h-5 w-5" />,
       label: "Sessions",
+      enabled: true,
+    },
+    {
+      path: "/timeline",
+      icon: <Clock className="h-5 w-5" />,
+      label: "Timeline",
       enabled: true,
     },
     {

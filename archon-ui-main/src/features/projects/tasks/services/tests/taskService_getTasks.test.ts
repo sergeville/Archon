@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { callAPIWithETag } from "../../../../shared/api/apiClient";
-import { taskService } from "../taskService";
 import type { Task } from "../../types";
+import { taskService } from "../taskService";
 
 // Mock the API call
 vi.mock("../../../../shared/api/apiClient", () => ({
@@ -55,7 +55,7 @@ describe("taskService.getTasks", () => {
     // Check specific params presence
     const lastCall = (callAPIWithETag as any).mock.calls[0];
     const url = lastCall[0];
-    
+
     expect(url).toContain("/api/tasks?");
     expect(url).toContain("status=todo");
     expect(url).toContain("per_page=100");

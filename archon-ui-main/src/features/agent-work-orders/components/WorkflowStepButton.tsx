@@ -1,11 +1,13 @@
 import { motion } from "framer-motion";
 import type React from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/features/ui/primitives/styles";
 
 interface WorkflowStepButtonProps {
   isCompleted: boolean;
   isActive: boolean;
   stepName: string;
+  stepStartTime?: string;
   onClick?: () => void;
   color?: "cyan" | "green" | "blue" | "purple";
   size?: number;
@@ -26,10 +28,26 @@ export const WorkflowStepButton: React.FC<WorkflowStepButtonProps> = ({
   isCompleted,
   isActive,
   stepName,
+  stepStartTime,
   onClick,
   color = "cyan",
   size = 40,
 }) => {
+  const [elapsedSecs, setElapsedSecs] = useState(() =>
+    stepStartTime ? Math.floor((Date.now() - new Date(stepStartTime).getTime()) / 1000) : 0,
+  );
+
+  useEffect(() => {
+    if (!isActive || isCompleted) return;
+    const base = stepStartTime ? new Date(stepStartTime).getTime() : Date.now();
+    const timer = setInterval(() => {
+      setElapsedSecs(Math.floor((Date.now() - base) / 1000));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isActive, isCompleted, stepStartTime]);
+
+  const secondDeg = (elapsedSecs % 60) * 6;
+  const minuteDeg = (elapsedSecs / 60) * 6;
   const colorMap = {
     purple: {
       border: "border-purple-400 dark:border-purple-300",
@@ -94,13 +112,13 @@ export const WorkflowStepButton: React.FC<WorkflowStepButtonProps> = ({
         <motion.div
           className={cn(
             "absolute inset-[-4px] rounded-full border-2 blur-sm",
-            isCompleted ? styles.border : "border-transparent",
+            isCompleted || isActive ? styles.border : "border-transparent",
           )}
           animate={{
-            opacity: isCompleted ? [0.3, 0.6, 0.3] : 0,
+            opacity: isCompleted ? [0.3, 0.6, 0.3] : isActive ? [0.4, 1, 0.4] : 0,
           }}
           transition={{
-            duration: 2,
+            duration: isActive && !isCompleted ? 1.2 : 2,
             repeat: Infinity,
             ease: "easeInOut",
           }}
@@ -108,52 +126,97 @@ export const WorkflowStepButton: React.FC<WorkflowStepButtonProps> = ({
 
         {/* Inner glow effect */}
         <motion.div
-          className={cn("absolute inset-[2px] rounded-full blur-md opacity-20", isCompleted && styles.fill)}
+          className={cn(
+            "absolute inset-[2px] rounded-full blur-md opacity-20",
+            (isCompleted || isActive) && styles.fill,
+          )}
           animate={{
-            opacity: isCompleted ? [0.1, 0.3, 0.1] : 0,
+            opacity: isCompleted ? [0.1, 0.3, 0.1] : isActive ? [0.05, 0.25, 0.05] : 0,
           }}
           transition={{
-            duration: 2,
+            duration: isActive && !isCompleted ? 1.2 : 2,
             repeat: Infinity,
             ease: "easeInOut",
           }}
         />
 
-        {/* Checkmark icon container */}
+        {/* Icon container */}
         <div className="relative w-full h-full flex items-center justify-center">
-          <motion.svg
-            width={size * 0.5}
-            height={size * 0.5}
-            viewBox="0 0 24 24"
-            fill="none"
-            className="relative z-10"
-            role="img"
-            aria-label={`${stepName} status indicator`}
-            animate={{
-              filter: isCompleted
-                ? [
-                    `drop-shadow(0 0 8px ${getColorValue(color)}) drop-shadow(0 0 12px ${getColorValue(color)})`,
-                    `drop-shadow(0 0 12px ${getColorValue(color)}) drop-shadow(0 0 16px ${getColorValue(color)})`,
-                    `drop-shadow(0 0 8px ${getColorValue(color)}) drop-shadow(0 0 12px ${getColorValue(color)})`,
-                  ]
-                : "none",
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          >
-            {/* Checkmark path */}
-            <path
-              d="M20 6L9 17l-5-5"
-              stroke="currentColor"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={isCompleted ? "text-white" : "text-gray-600"}
-            />
-          </motion.svg>
+          {isActive && !isCompleted ? (
+            /* Analog clock with spinning second hand */
+            <svg
+              width={size * 0.55}
+              height={size * 0.55}
+              viewBox="0 0 24 24"
+              fill="none"
+              className="relative z-10"
+              role="img"
+              aria-label={`${stepName} - in progress`}
+            >
+              {/* Clock face */}
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" className={labelColor} />
+              {/* Minute hand — rotates based on elapsed minutes */}
+              <motion.line
+                x1="12"
+                y1="12"
+                x2="12"
+                y2="6.5"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                className={labelColor}
+                style={{ originX: "12px", originY: "12px" }}
+                animate={{ rotate: minuteDeg }}
+                transition={{ duration: 0.4, ease: "linear" }}
+              />
+              {/* Second hand — rotates based on elapsed seconds */}
+              <motion.line
+                x1="12"
+                y1="12"
+                x2="12"
+                y2="4.5"
+                stroke="currentColor"
+                strokeWidth="1"
+                strokeLinecap="round"
+                className="text-white"
+                style={{ originX: "12px", originY: "12px" }}
+                animate={{ rotate: secondDeg }}
+                transition={{ duration: 0.4, ease: "linear" }}
+              />
+              {/* Center dot */}
+              <circle cx="12" cy="12" r="1" fill="currentColor" className="text-white" />
+            </svg>
+          ) : (
+            /* Checkmark for completed / pending */
+            <motion.svg
+              width={size * 0.5}
+              height={size * 0.5}
+              viewBox="0 0 24 24"
+              fill="none"
+              className="relative z-10"
+              role="img"
+              aria-label={`${stepName} status indicator`}
+              animate={{
+                filter: isCompleted
+                  ? [
+                      `drop-shadow(0 0 8px ${getColorValue(color)}) drop-shadow(0 0 12px ${getColorValue(color)})`,
+                      `drop-shadow(0 0 12px ${getColorValue(color)}) drop-shadow(0 0 16px ${getColorValue(color)})`,
+                      `drop-shadow(0 0 8px ${getColorValue(color)}) drop-shadow(0 0 12px ${getColorValue(color)})`,
+                    ]
+                  : "none",
+              }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <path
+                d="M20 6L9 17l-5-5"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={isCompleted ? "text-white" : "text-gray-600"}
+              />
+            </motion.svg>
+          )}
         </div>
       </motion.button>
 
@@ -161,11 +224,7 @@ export const WorkflowStepButton: React.FC<WorkflowStepButtonProps> = ({
       <span
         className={cn(
           "text-xs font-medium transition-colors",
-          isCompleted
-            ? labelColor
-            : isActive
-              ? labelColor
-              : "text-gray-500 dark:text-gray-400",
+          isCompleted ? labelColor : isActive ? labelColor : "text-gray-500 dark:text-gray-400",
         )}
       >
         {stepName}

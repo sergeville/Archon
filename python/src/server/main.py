@@ -43,6 +43,8 @@ from .api_routes.shared_context_api import router as shared_context_router
 from .api_routes.handoff_api import router as handoff_router
 from .api_routes.test_runner_api import router as test_runner_router
 from .api_routes.plan_promoter_api import router as plan_promoter_router
+from .api_routes.audit_api import router as audit_router
+from .api_routes.council_api import router as council_router
 
 # Import Logfire configuration
 from .config.logfire_config import api_logger, setup_logfire
@@ -245,6 +247,8 @@ app.include_router(version_router)
 app.include_router(migration_router)
 app.include_router(test_runner_router)
 app.include_router(plan_promoter_router)
+app.include_router(audit_router)
+app.include_router(council_router)
 
 
 # Root endpoint

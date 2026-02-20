@@ -214,7 +214,7 @@ export function RealTimeStats({ workOrderId }: RealTimeStatsProps) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [progress?.status, progress?.elapsedSeconds, progress]);
+  }, [progress?.status, progress?.elapsedSeconds]);
 
   // Only hide if we have absolutely no data from any source
   if (!progress && logs.length === 0) {

@@ -25,7 +25,6 @@ interface SendToAgentModalProps {
 }
 
 const ALL_STEPS: WorkflowStep[] = ["create-branch", "planning", "execute", "commit", "create-pr"];
-const DEFAULT_STEPS = new Set<WorkflowStep>(ALL_STEPS);
 
 function buildPrompt(projectName: string, tasks: Task[]): string {
   if (tasks.length === 1) {
@@ -46,8 +45,7 @@ function buildPrompt(projectName: string, tasks: Task[]): string {
   }
 
   const taskLines = tasks
-    .map((t, i) => [`${i + 1}. ${t.title} [${t.priority}]`, t.description ? `   ${t.description}` : null])
-    .flat()
+    .flatMap((t, i) => [`${i + 1}. ${t.title} [${t.priority}]`, t.description ? `   ${t.description}` : null])
     .filter(Boolean)
     .join("\n");
 
@@ -62,23 +60,21 @@ function buildPrompt(projectName: string, tasks: Task[]): string {
 }
 
 export function SendToAgentModal({ open, onClose, projectId, projectName, tasks }: SendToAgentModalProps) {
+  if (tasks.length === 0) return null;
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { data: repositories = [], isLoading: isLoadingRepos } = useRepositories();
   const createWorkOrder = useCreateWorkOrder();
 
   const [selectedRepoId, setSelectedRepoId] = useState<string>("");
-  const [selectedSteps, setSelectedSteps] = useState<Set<WorkflowStep>>(DEFAULT_STEPS);
+  const [selectedSteps, setSelectedSteps] = useState<Set<WorkflowStep>>(new Set(ALL_STEPS));
   const [prompt, setPrompt] = useState("");
 
-  // Reset state when modal opens with new tasks
+  // Reset state when modal opens with new tasks (repo selection handled by the effect below)
   useEffect(() => {
     if (open) {
       setPrompt(buildPrompt(projectName, tasks));
-      setSelectedSteps(new Set(DEFAULT_STEPS));
-      if (repositories.length > 0 && !selectedRepoId) {
-        setSelectedRepoId(repositories[0].id);
-      }
+      setSelectedSteps(new Set(ALL_STEPS));
     }
   }, [open, projectName, tasks]);
 
@@ -125,7 +121,7 @@ export function SendToAgentModal({ open, onClose, projectId, projectName, tasks 
   const hasNoRepos = !isLoadingRepos && repositories.length === 0;
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && !createWorkOrder.isPending && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -148,7 +144,10 @@ export function SendToAgentModal({ open, onClose, projectId, projectName, tasks 
                 <span>No repositories configured.</span>
                 <button
                   type="button"
-                  onClick={() => { onClose(); navigate("/agent-work-orders"); }}
+                  onClick={() => {
+                    onClose();
+                    navigate("/agent-work-orders");
+                  }}
                   className="inline-flex items-center gap-1 underline hover:no-underline"
                 >
                   Configure one <ExternalLink className="w-3 h-3" />

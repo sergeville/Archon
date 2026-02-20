@@ -55,6 +55,7 @@ class WorkflowOrchestrator:
         user_request: str,
         selected_commands: list[str] | None = None,
         github_issue_number: str | None = None,
+        dry_run: bool = False,
     ) -> None:
         """Execute user-selected commands in sequence
 
@@ -97,6 +98,21 @@ class WorkflowOrchestrator:
             "user_request": user_request,
             "github_issue_number": github_issue_number,
         }
+
+        # Dry-run: log what would execute and return immediately
+        if dry_run:
+            bound_logger.info(
+                "workflow_dry_run_started",
+                total_steps=total_steps,
+                commands=selected_commands,
+            )
+            for command_name in selected_commands:
+                bound_logger.info("dry_run_step_skipped", step=command_name)
+            await self.state_repository.update_status(
+                agent_work_order_id, AgentWorkOrderStatus.COMPLETED
+            )
+            bound_logger.info("workflow_dry_run_completed", total_steps=total_steps)
+            return
 
         sandbox = None
 

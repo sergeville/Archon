@@ -108,13 +108,12 @@ export const DocsTab = ({ project }: DocsTabProps) => {
           return;
         }
       }
-      
+
       if (!selectedDocument) {
         setSelectedDocument(documents[0]);
       }
     }
   }, [documents, docId, selectedDocument]);
-
 
   // Update selected document if it was updated
   useEffect(() => {

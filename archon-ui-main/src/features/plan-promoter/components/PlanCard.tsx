@@ -26,20 +26,11 @@ export function PlanCard({ plan, onPromote }: PlanCardProps) {
   const isPromotable = plan.status === "ACTIVE" && !plan.already_promoted;
 
   return (
-    <Card
-      glowColor={isPromotable ? "cyan" : "none"}
-      glowType="outer"
-      glowSize="sm"
-      className="flex flex-col gap-3"
-    >
+    <Card glowColor={isPromotable ? "cyan" : "none"} glowType="outer" glowSize="sm" className="flex flex-col gap-3">
       {/* Header row */}
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug">
-          {plan.name}
-        </h3>
-        <span
-          className={`shrink-0 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${badge.className}`}
-        >
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug">{plan.name}</h3>
+        <span className={`shrink-0 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${badge.className}`}>
           {badge.label}
         </span>
       </div>
@@ -50,9 +41,7 @@ export function PlanCard({ plan, onPromote }: PlanCardProps) {
       </p>
 
       {/* Notes */}
-      {plan.notes && (
-        <p className="text-xs text-gray-600 dark:text-zinc-400 line-clamp-2">{plan.notes}</p>
-      )}
+      {plan.notes && <p className="text-xs text-gray-600 dark:text-zinc-400 line-clamp-2">{plan.notes}</p>}
 
       {/* Action */}
       <div className="mt-auto pt-1">

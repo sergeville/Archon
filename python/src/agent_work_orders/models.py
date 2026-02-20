@@ -16,6 +16,16 @@ class AgentWorkOrderStatus(str, Enum):
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
+    BLOCKED = "blocked"  # Blocked by Validation Council
+
+
+class RiskLevel(str, Enum):
+    """Risk level for agent work orders — used by Validation Council"""
+
+    LOW = "low"
+    MED = "med"
+    HIGH = "high"
+    DESTRUCTIVE = "destructive"
 
 
 class AgentWorkflowType(str, Enum):
@@ -87,6 +97,11 @@ class AgentWorkOrder(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+    # Display fields
+    title: str | None = None
+    risk_level: RiskLevel = RiskLevel.LOW
+    dry_run: bool = False
+
     # Computed fields (from git inspection)
     github_pull_request_url: str | None = None
     git_commit_count: int = 0
@@ -113,6 +128,15 @@ class CreateAgentWorkOrderRequest(BaseModel):
         description="Commands to run in sequence"
     )
     github_issue_number: str | None = Field(None, description="Optional explicit GitHub issue number for reference")
+    title: str | None = Field(None, description="Human-readable title (e.g. project and task name)")
+    risk_level: RiskLevel = Field(
+        default=RiskLevel.LOW,
+        description="Risk level — used by Validation Council to gate execution"
+    )
+    dry_run: bool = Field(
+        default=False,
+        description="If True, validate and log workflow steps but skip all CLI execution"
+    )
 
     @field_validator('selected_commands')
     @classmethod
