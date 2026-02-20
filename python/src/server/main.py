@@ -41,6 +41,7 @@ from .api_routes.whiteboard_api import router as whiteboard_router
 from .api_routes.agent_registry_api import router as agent_registry_router
 from .api_routes.shared_context_api import router as shared_context_router
 from .api_routes.handoff_api import router as handoff_router
+from .api_routes.test_runner_api import router as test_runner_router
 
 # Import Logfire configuration
 from .config.logfire_config import api_logger, setup_logfire
@@ -241,6 +242,7 @@ app.include_router(bug_report_router)
 app.include_router(providers_router)
 app.include_router(version_router)
 app.include_router(migration_router)
+app.include_router(test_runner_router)
 
 
 # Root endpoint
