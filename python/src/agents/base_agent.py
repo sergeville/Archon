@@ -13,7 +13,7 @@ from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel
 from pydantic_ai import Agent
-from ..server.utils.http_202_protocol import FollowUpPlan, generate_follow_up_plan
+from .http_202_protocol import FollowUpPlan, generate_follow_up_plan
 
 logger = logging.getLogger(__name__)
 
