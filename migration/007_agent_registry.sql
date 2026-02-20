@@ -1,4 +1,4 @@
-CREATE TABLE archon_agent_registry (
+CREATE TABLE IF NOT EXISTS archon_agent_registry (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT UNIQUE NOT NULL,
   capabilities TEXT[] DEFAULT '{}',

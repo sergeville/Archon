@@ -1,4 +1,4 @@
-CREATE TABLE archon_shared_context (
+CREATE TABLE IF NOT EXISTS archon_shared_context (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   context_key TEXT UNIQUE NOT NULL,
   value JSONB NOT NULL DEFAULT '{}',
@@ -9,7 +9,7 @@ CREATE TABLE archon_shared_context (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE archon_shared_context_history (
+CREATE TABLE IF NOT EXISTS archon_shared_context_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   context_key TEXT NOT NULL,
   old_value JSONB,
@@ -28,6 +28,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS shared_context_audit_trigger ON archon_shared_context;
 CREATE TRIGGER shared_context_audit_trigger
   BEFORE UPDATE ON archon_shared_context
   FOR EACH ROW EXECUTE FUNCTION archon_shared_context_audit();
@@ -37,7 +38,19 @@ CREATE INDEX IF NOT EXISTS idx_shared_context_history_key ON archon_shared_conte
 
 ALTER TABLE archon_shared_context ENABLE ROW LEVEL SECURITY;
 ALTER TABLE archon_shared_context_history ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role full access" ON archon_shared_context
-  FOR ALL USING (auth.role() = 'service_role');
-CREATE POLICY "Service role full access" ON archon_shared_context_history
-  FOR ALL USING (auth.role() = 'service_role');
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'archon_shared_context' AND policyname = 'Service role full access'
+  ) THEN
+    CREATE POLICY "Service role full access" ON archon_shared_context
+      FOR ALL USING (auth.role() = 'service_role');
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'archon_shared_context_history' AND policyname = 'Service role full access'
+  ) THEN
+    CREATE POLICY "Service role full access" ON archon_shared_context_history
+      FOR ALL USING (auth.role() = 'service_role');
+  END IF;
+END $$;
