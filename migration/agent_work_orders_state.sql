@@ -101,6 +101,7 @@ CREATE INDEX IF NOT EXISTS idx_agent_work_order_steps_executed_at
 
 -- Apply auto-update trigger for updated_at timestamp
 -- Reuses existing update_updated_at_column() function from Archon migrations
+DROP TRIGGER IF EXISTS update_agent_work_orders_updated_at ON archon_agent_work_orders;
 CREATE TRIGGER update_agent_work_orders_updated_at
     BEFORE UPDATE ON archon_agent_work_orders
     FOR EACH ROW

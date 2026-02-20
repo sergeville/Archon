@@ -24,6 +24,7 @@ import { HandoffsPage } from './pages/HandoffsPage';
 import { TestRunnerPage } from './pages/TestRunnerPage';
 import { PlanPromoterPage } from './pages/PlanPromoterPage';
 import { AgentExecutionPage } from './pages/AgentExecutionPage';
+import { TimelinePage } from './pages/TimelinePage';
 import { DisconnectScreenOverlay } from './components/DisconnectScreenOverlay';
 import { ErrorBoundaryWithBugReport } from './components/bug-report/ErrorBoundaryWithBugReport';
 import { MigrationBanner } from './components/ui/MigrationBanner';
@@ -42,6 +43,7 @@ const AppRoutes = () => {
       <Route path="/agents" element={<AgentsPage />} />
       <Route path="/context" element={<SharedContextPage />} />
       <Route path="/handoffs" element={<HandoffsPage />} />
+      <Route path="/timeline" element={<TimelinePage />} />
       <Route path="/onboarding" element={<OnboardingPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/mcp" element={<MCPPage />} />
@@ -58,10 +60,14 @@ const AppRoutes = () => {
           <Route path="/projects/:projectId" element={<ProjectPage />} />
           <Route path="/projects/:projectId/docs" element={<ProjectPage />} />
           <Route path="/projects/:projectId/docs/:docId" element={<ProjectPage />} />
-          <Route path="/projects/:projectId/agent-run/:workOrderId" element={<AgentExecutionPage />} />
         </>
       ) : (
         <Route path="/projects" element={<Navigate to="/" replace />} />
+      )}
+      {projectsEnabled && agentWorkOrdersEnabled ? (
+        <Route path="/projects/:projectId/agent-run/:workOrderId" element={<AgentExecutionPage />} />
+      ) : (
+        <Route path="/projects/:projectId/agent-run/:workOrderId" element={<Navigate to="/projects" replace />} />
       )}
       {agentWorkOrdersEnabled ? (
         <>
@@ -69,7 +75,10 @@ const AppRoutes = () => {
           <Route path="/agent-work-orders/:id" element={<AgentWorkOrderDetailPage />} />
         </>
       ) : (
-        <Route path="/agent-work-orders" element={<Navigate to="/" replace />} />
+        <>
+          <Route path="/agent-work-orders" element={<Navigate to="/" replace />} />
+          <Route path="/agent-work-orders/:id" element={<Navigate to="/" replace />} />
+        </>
       )}
     </Routes>
   );
