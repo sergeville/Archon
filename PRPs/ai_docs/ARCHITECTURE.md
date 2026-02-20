@@ -65,12 +65,33 @@ components/          # Legacy components (migrating)
 **MCP Tools**: `python/src/mcp_server/features/sessions/`
 **Features**:
 - Agent work session tracking
-- Event logging with embeddings
+- Event logging with embeddings (VECTOR(1024) — mxbai-embed-large)
 - Semantic search across sessions
 - AI-powered session summarization
 - Context retrieval for session resumption
 
-**Status**: Backend 90% complete (12 endpoints, 5 MCP tools, 15 service methods), Frontend integration pending
+**Status**: ✅ Complete (backend + frontend live)
+
+### Agent Registry (Phase 4)
+**Backend**: `python/src/server/api_routes/agent_registry_api.py`
+**Frontend**: `archon-ui-main/src/features/agents/`
+**API**: `/api/agents`
+**DB**: `archon_agent_registry`
+**Features**: Register agents, track status (active/inactive/busy), capabilities, last_seen
+
+### Shared Context (Phase 4)
+**Backend**: `python/src/server/api_routes/shared_context_api.py`
+**Frontend**: `archon-ui-main/src/features/shared-context/`
+**API**: `/api/context`
+**DB**: `archon_shared_context`, `archon_shared_context_history`
+**Features**: Key-value store shared across all agents, full audit history via trigger
+
+### Session Handoffs (Phase 4)
+**Backend**: `python/src/server/api_routes/handoff_api.py`
+**Frontend**: `archon-ui-main/src/features/handoffs/`
+**API**: `/api/handoffs`
+**DB**: `archon_session_handoffs`
+**Features**: Agent-to-agent task handoffs with status lifecycle (pending→accepted→completed)
 
 ### MCP Server
 **Location**: `python/src/mcp_server/`
@@ -97,9 +118,12 @@ Pattern: `{METHOD} /api/{resource}/{id?}/{sub-resource?}`
 - `/api/projects/{id}/tasks` - Nested resources
 - `/api/knowledge/search` - RAG search
 - `/api/progress/{id}` - Operation status
-- `/api/sessions` - Session management (Phase 2)
+- `/api/sessions` - Session management
 - `/api/sessions/{id}/events` - Session events
 - `/api/sessions/search` - Semantic session search
+- `/api/agents` - Agent registry CRUD
+- `/api/context` - Shared context key-value store
+- `/api/handoffs` - Session handoffs
 
 ### Service Layer
 **Pattern**: `python/src/server/services/{feature}_service.py`
@@ -146,8 +170,12 @@ features/{feature}/
 - `archon_projects` - Projects (with embedding column)
 - `archon_tasks` - Tasks (with embedding column)
 - `archon_document_versions` - Version history
-- `archon_sessions` - Agent work sessions (Phase 2)
-- `archon_session_events` - Session event logs (Phase 2)
+- `archon_sessions` - Agent work sessions
+- `archon_session_events` - Session event logs
+- `archon_agent_registry` - Registered swarm agents (Phase 4)
+- `archon_shared_context` - Cross-agent key-value store (Phase 4)
+- `archon_shared_context_history` - Audit trail for context changes (Phase 4)
+- `archon_session_handoffs` - Agent-to-agent task handoffs (Phase 4)
 
 ## Key Architectural Decisions
 
@@ -206,17 +234,21 @@ Controlled via Settings UI. Projects feature can be disabled.
 - Applied to task and session management
 - Improved efficiency with optimized payloads
 
-### Phase 2: Session Memory System (2026-02 - In Progress)
-**Status**: 75% complete (backend done, frontend pending)
-- ✅ Database schema with vector embeddings
+### Phase 2: Session Memory System (2026-02 - Complete)
+- ✅ Database schema with vector embeddings (VECTOR(1024))
 - ✅ SessionService with 15 methods
 - ✅ 12 REST API endpoints
 - ✅ 5 MCP tools (consolidated pattern)
 - ✅ AI-powered summarization (PydanticAI)
-- ⚠️ Semantic search (migration 003 pending)
-- ❌ Frontend integration (0%)
+- ✅ Frontend integration (SessionsPage live)
+- ✅ Embedding dimensions fixed: 1536 → 1024 (mxbai-embed-large)
 
-See `docs/PHASE_2_ACTUAL_STATUS.md` for detailed status
+### Phase 4: Swarm Infrastructure (2026-02-19 - Complete)
+- ✅ Agent Registry — `archon_agent_registry` + `/api/agents` + `/agents` page
+- ✅ Shared Context — `archon_shared_context` + `/api/context` + `/context` page
+- ✅ Session Handoffs — `archon_session_handoffs` + `/api/handoffs` + `/handoffs` page
+- ✅ All migrations run (007, 008, 009, fix_embedding_dimensions)
+- ✅ `.env` file established for reproducible Docker deployments
 
 ## Performance Optimizations
 

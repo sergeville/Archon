@@ -1,1 +1,0 @@
-export { HandoffsView } from "./HandoffsView";
