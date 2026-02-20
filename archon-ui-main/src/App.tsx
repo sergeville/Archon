@@ -18,6 +18,9 @@ import StyleGuidePage from './pages/StyleGuidePage';
 import { AgentWorkOrdersPage } from './pages/AgentWorkOrdersPage';
 import { AgentWorkOrderDetailPage } from './pages/AgentWorkOrderDetailPage';
 import { SessionsPage } from './pages/SessionsPage';
+import { AgentsPage } from './pages/AgentsPage';
+import { SharedContextPage } from './pages/SharedContextPage';
+import { HandoffsPage } from './pages/HandoffsPage';
 import { TestRunnerPage } from './pages/TestRunnerPage';
 import { DisconnectScreenOverlay } from './components/DisconnectScreenOverlay';
 import { ErrorBoundaryWithBugReport } from './components/bug-report/ErrorBoundaryWithBugReport';
@@ -34,6 +37,9 @@ const AppRoutes = () => {
       <Route path="/" element={<KnowledgeBasePage />} />
       <Route path="/todo" element={<GlobalTodoPage />} />
       <Route path="/sessions" element={<SessionsPage />} />
+      <Route path="/agents" element={<AgentsPage />} />
+      <Route path="/context" element={<SharedContextPage />} />
+      <Route path="/handoffs" element={<HandoffsPage />} />
       <Route path="/onboarding" element={<OnboardingPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/mcp" element={<MCPPage />} />

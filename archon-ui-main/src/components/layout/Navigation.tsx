@@ -1,4 +1,4 @@
-import { ListTodo, BookOpen, Bot, FlaskConical, Palette, Settings, MessageSquare, Activity } from "lucide-react";
+import { ListTodo, BookOpen, Bot, FlaskConical, Palette, Settings, MessageSquare, Activity, ArrowRightLeft, Database, Users } from "lucide-react";
 import type React from "react";
 import { Link, useLocation } from "react-router-dom";
 // TEMPORARY: Use old SettingsContext until settings are migrated
@@ -50,6 +50,24 @@ export function Navigation({ className }: NavigationProps) {
       path: "/sessions",
       icon: <Activity className="h-5 w-5" />,
       label: "Sessions",
+      enabled: true,
+    },
+    {
+      path: "/agents",
+      icon: <Users className="h-5 w-5" />,
+      label: "Agent Registry",
+      enabled: true,
+    },
+    {
+      path: "/context",
+      icon: <Database className="h-5 w-5" />,
+      label: "Shared Context",
+      enabled: true,
+    },
+    {
+      path: "/handoffs",
+      icon: <ArrowRightLeft className="h-5 w-5" />,
+      label: "Handoffs",
       enabled: true,
     },
     {
