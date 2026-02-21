@@ -151,11 +151,12 @@ def register_session_tools(mcp: FastMCP):
         - "create": Start a new session for an agent
         - "end": End a session (optionally with summary)
         - "update": Update session context or metadata
+        - "summarize": Generate an AI summary of a session using Claude
 
         Args:
             action: Operation to perform
             agent: Agent name (required for create)
-            session_id: Session UUID (required for end/update)
+            session_id: Session UUID (required for end/update/summarize)
             project_id: Optional project UUID (for create)
             summary: Session summary (for end/update)
             context: Session context data (for create/update)
@@ -168,6 +169,7 @@ def register_session_tools(mcp: FastMCP):
             manage_session(action="create", agent="claude", project_id="uuid")
             manage_session(action="end", session_id="uuid", summary="Completed Phase 2")
             manage_session(action="update", session_id="uuid", metadata={"status": "active"})
+            manage_session(action="summarize", session_id="uuid")
         """
         try:
             api_url = get_api_url()
@@ -250,10 +252,27 @@ def register_session_tools(mcp: FastMCP):
                     else:
                         return MCPErrorFormatter.format_http_error(response)
 
+            elif action == "summarize":
+                if not session_id:
+                    return json.dumps({"success": False, "error": "session_id is required for summarize action"})
+
+                async with httpx.AsyncClient(timeout=timeout) as client:
+                    response = await client.post(
+                        urljoin(api_url, f"/api/sessions/{session_id}/summarize")
+                    )
+
+                    if response.status_code == 200:
+                        result = response.json()
+                        return json.dumps({"success": True, "session": result["session"]})
+                    elif response.status_code == 404:
+                        return json.dumps({"success": False, "error": f"Session {session_id} not found"})
+                    else:
+                        return MCPErrorFormatter.format_http_error(response)
+
             else:
                 return json.dumps({
                     "success": False,
-                    "error": f"Invalid action: {action}. Must be 'create', 'end', or 'update'"
+                    "error": f"Invalid action: {action}. Must be 'create', 'end', 'update', or 'summarize'"
                 })
 
         except httpx.TimeoutException:

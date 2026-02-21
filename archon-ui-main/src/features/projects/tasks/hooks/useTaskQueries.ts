@@ -21,14 +21,14 @@ export const taskKeys = {
 };
 
 // Fetch tasks for a specific project
-export function useProjectTasks(projectId: string | undefined, enabled = true) {
+export function useProjectTasks(projectId: string | undefined, enabled = true, includeArchived = false) {
   const { refetchInterval } = useSmartPolling(2000); // 2s active per guideline for real-time task updates
 
   return useQuery<Task[]>({
-    queryKey: projectId ? taskKeys.byProject(projectId) : DISABLED_QUERY_KEY,
+    queryKey: projectId ? [...taskKeys.byProject(projectId), { includeArchived }] : DISABLED_QUERY_KEY,
     queryFn: async () => {
       if (!projectId) throw new Error("No project ID");
-      return taskService.getTasksByProject(projectId);
+      return taskService.getTasksByProject(projectId, includeArchived);
     },
     enabled: !!projectId && enabled,
     refetchInterval, // Smart interval based on page visibility/focus
@@ -214,6 +214,63 @@ export function useDeleteTask(projectId: string) {
       queryClient.invalidateQueries({ queryKey: taskKeys.counts() });
       // Also refetch the project's task list to reconcile server-side ordering
       queryClient.invalidateQueries({ queryKey: taskKeys.byProject(projectId) });
+    },
+  });
+}
+
+// Archive task mutation with optimistic removal from active view
+export function useArchiveTask(projectId: string) {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation<void, Error, { taskId: string; reason?: string }, { previousTasks?: Task[] }>({
+    mutationFn: ({ taskId, reason }) => taskService.archiveTask(taskId, reason),
+    onMutate: async ({ taskId }) => {
+      await queryClient.cancelQueries({ queryKey: taskKeys.byProject(projectId) });
+      const previousTasks = queryClient.getQueryData<Task[]>(taskKeys.byProject(projectId));
+
+      // Optimistically remove from active (non-archived) view
+      queryClient.setQueryData<Task[]>(taskKeys.byProject(projectId), (old) => {
+        if (!old) return old;
+        return old.filter((task) => task.id !== taskId);
+      });
+
+      return { previousTasks };
+    },
+    onError: (error, _variables, context) => {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (context?.previousTasks) {
+        queryClient.setQueryData(taskKeys.byProject(projectId), context.previousTasks);
+      }
+      showToast(`Failed to archive task: ${errorMessage}`, "error");
+    },
+    onSuccess: () => {
+      showToast("Task archived", "success");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: taskKeys.byProject(projectId) });
+      queryClient.invalidateQueries({ queryKey: taskKeys.counts() });
+    },
+  });
+}
+
+// Unarchive task mutation
+export function useUnarchiveTask(projectId: string) {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation<void, Error, string, { previousTasks?: Task[] }>({
+    mutationFn: (taskId: string) => taskService.unarchiveTask(taskId),
+    onError: (error) => {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      showToast(`Failed to unarchive task: ${errorMessage}`, "error");
+    },
+    onSuccess: () => {
+      showToast("Task unarchived", "success");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: taskKeys.byProject(projectId) });
+      queryClient.invalidateQueries({ queryKey: taskKeys.counts() });
     },
   });
 }

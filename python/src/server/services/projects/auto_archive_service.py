@@ -43,9 +43,10 @@ class AutoArchiveService:
         while self._running:
             try:
                 await self.check_and_archive_projects()
+                await self.archive_stale_tasks()
             except Exception as e:
                 logfire.error(f"Error in Auto-Archive loop: {e}", exc_info=True)
-            
+
             await asyncio.sleep(self.check_interval)
 
     async def check_and_archive_projects(self):
@@ -100,6 +101,44 @@ class AutoArchiveService:
                 # 5. Archive the project!
                 logfire.info(f"Auto-Archiving project '{project['title']}' - All tasks done for >24h")
                 self.project_service.update_project(project_id, {"archived": True})
+
+    async def archive_stale_tasks(
+        self,
+        status_filter: list[str] | None = None,
+        days_threshold: int = 30,
+    ) -> int:
+        """
+        Archive tasks that have been in the given statuses for longer than days_threshold days.
+
+        Args:
+            status_filter: List of statuses to target. Defaults to ["todo"].
+            days_threshold: Days of inactivity before archiving. Defaults to 30.
+
+        Returns:
+            Number of tasks archived.
+        """
+        if status_filter is None:
+            status_filter = ["todo"]
+
+        logfire.debug(
+            f"Auto-Archive: Checking for stale tasks (status={status_filter}, >{days_threshold} days)..."
+        )
+
+        success, result = self.task_service.bulk_archive_tasks(
+            status_filter=status_filter,
+            older_than_days=days_threshold,
+            archived_by="auto-archive",
+            archived_reason=f"Auto-archived: stale task in '{', '.join(status_filter)}' status for >{days_threshold} days",
+        )
+
+        if success:
+            count = result.get("archived_count", 0)
+            if count > 0:
+                logfire.info(f"Auto-Archive: Archived {count} stale task(s)")
+            return count
+        else:
+            logfire.error(f"Auto-Archive: Failed to archive stale tasks: {result}")
+            return 0
 
 # Singleton instance
 auto_archive_service = AutoArchiveService()

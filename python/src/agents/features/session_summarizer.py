@@ -9,8 +9,17 @@ Analyzes session events to extract:
 - Next steps suggested
 """
 
+import os
+
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.providers.openai import OpenAIProvider
+
+
+def _ollama_model(model_name: str) -> OpenAIModel:
+    host = os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434")
+    return OpenAIModel(model_name, provider=OpenAIProvider(base_url=f"{host}/v1", api_key="ollama"))
 
 
 class SessionSummary(BaseModel):
@@ -35,8 +44,8 @@ class SessionSummary(BaseModel):
 
 # Initialize the PydanticAI agent
 session_summarizer = Agent(
-    "anthropic:claude-sonnet-4-5-20250929",  # Using Claude Sonnet 4.5 for best quality
-    output_type=SessionSummary,
+    _ollama_model("llama3.2"),
+    result_type=SessionSummary,
     system_prompt="""
     You are a session summarization agent for Archon, a multi-agent knowledge management system.
 
@@ -113,4 +122,4 @@ Generate a comprehensive summary covering what was accomplished, decisions made,
     # Run the AI agent
     result = await session_summarizer.run(prompt)
 
-    return result.output
+    return result.data

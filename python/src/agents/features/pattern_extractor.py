@@ -6,10 +6,18 @@ Identifies recurring sequences of actions, decisions, and outcomes that could
 be applied in future sessions.
 """
 
+import os
 from typing import Optional
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.providers.openai import OpenAIProvider
+
+
+def _ollama_model(model_name: str) -> OpenAIModel:
+    host = os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434")
+    return OpenAIModel(model_name, provider=OpenAIProvider(base_url=f"{host}/v1", api_key="ollama"))
 
 
 class PatternCandidate(BaseModel):
@@ -51,8 +59,8 @@ class ExtractedPatterns(BaseModel):
 
 # Initialize the PydanticAI agent
 pattern_extractor = Agent(
-    "anthropic:claude-sonnet-4-5-20250929",
-    output_type=ExtractedPatterns,
+    _ollama_model("llama3.2"),
+    result_type=ExtractedPatterns,
     system_prompt="""
     You are a pattern extraction agent for Archon, a multi-agent knowledge management system.
 
@@ -128,4 +136,4 @@ Focus on what worked, what failed, and what technical or process approaches were
 """
 
     result = await pattern_extractor.run(prompt)
-    return result.output
+    return result.data

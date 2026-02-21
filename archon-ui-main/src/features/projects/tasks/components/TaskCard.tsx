@@ -20,6 +20,8 @@ export interface TaskCardProps {
   onTaskReorder: (taskId: string, targetIndex: number, status: Task["status"]) => void;
   onEdit?: (task: Task) => void; // Optional edit handler
   onDelete?: (task: Task) => void; // Optional delete handler
+  onArchive?: (task: Task) => void;
+  onUnarchive?: (task: Task) => void;
   onSendToAgent?: (task: Task) => void; // Optional send-to-agent handler
   hoveredTaskId?: string | null;
   onTaskHover?: (taskId: string | null) => void;
@@ -34,6 +36,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onTaskReorder,
   onEdit,
   onDelete,
+  onArchive,
+  onUnarchive,
   onSendToAgent,
   hoveredTaskId,
   onTaskHover,
@@ -63,6 +67,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       // Delete task - no handler provided
     }
   }, [onDelete, task]);
+
+  const handleArchive = useCallback(() => {
+    onArchive?.(task);
+  }, [onArchive, task]);
+
+  const handleUnarchive = useCallback(() => {
+    onUnarchive?.(task);
+  }, [onUnarchive, task]);
 
   const handleSendToAgent = useCallback(() => {
     onSendToAgent?.(task);
@@ -137,6 +149,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         "w-full min-h-[140px] cursor-move relative group",
         "transition-all duration-200 ease-in-out",
         isDragging ? "opacity-50 scale-90" : "scale-100 opacity-100",
+        task.archived && "opacity-50 grayscale",
       )}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -153,6 +166,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           isSelected && "border-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.4)]",
           "group-hover:border-cyan-400/70 dark:group-hover:border-cyan-500/50 group-hover:shadow-[0_0_15px_rgba(34,211,238,0.4)] dark:group-hover:shadow-[0_0_15px_rgba(34,211,238,0.6)]",
           optimistic && "opacity-80 ring-1 ring-cyan-400/30",
+          task.archived && "border-dashed border-amber-500/30",
         )}
       >
         {/* Priority indicator with beautiful glow */}
@@ -192,6 +206,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 taskTitle={task.title}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onArchive={onArchive ? handleArchive : undefined}
+                onUnarchive={onUnarchive ? handleUnarchive : undefined}
+                isArchived={task.archived}
                 onSendToAgent={onSendToAgent ? handleSendToAgent : undefined}
                 isDeleting={false}
               />

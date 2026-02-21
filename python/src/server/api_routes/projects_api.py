@@ -708,6 +708,7 @@ async def list_tasks(
     status: str | None = None,
     project_id: str | None = None,
     include_closed: bool = True,
+    include_archived: bool = False,
     page: int = 1,
     per_page: int = 10,
     exclude_large_fields: bool = False,
@@ -726,6 +727,7 @@ async def list_tasks(
             status=status,
             include_closed=include_closed,
             exclude_large_fields=exclude_large_fields,
+            include_archived=include_archived,
             search_query=q,  # Pass search query to service
         )
 
@@ -821,6 +823,19 @@ class UpdateTaskRequest(BaseModel):
     task_order: int | None = None
     priority: str | None = None
     feature: str | None = None
+
+
+class ArchiveTaskRequest(BaseModel):
+    archived: bool
+    archived_reason: str | None = None
+
+
+class BulkArchiveTasksRequest(BaseModel):
+    task_ids: list[str] | None = None
+    project_id: str | None = None
+    status_filter: list[str] | None = None
+    older_than_days: int | None = None
+    archived_reason: str | None = None
 
 
 class CreateDocumentRequest(BaseModel):
@@ -921,6 +936,66 @@ async def delete_task(task_id: str):
         raise
     except Exception as e:
         logfire.error(f"Failed to archive task | error={str(e)} | task_id={task_id}")
+        raise HTTPException(status_code=500, detail={"error": str(e)})
+
+
+@router.patch("/tasks/{task_id}/archive")
+async def archive_or_unarchive_task(task_id: str, request: ArchiveTaskRequest):
+    """Archive or unarchive a task (toggle)."""
+    try:
+        task_service = TaskService()
+
+        if request.archived:
+            success, result = await task_service.archive_task(
+                task_id, archived_by="api", archived_reason=request.archived_reason
+            )
+        else:
+            success, result = await task_service.unarchive_task(task_id)
+
+        if not success:
+            error = result.get("error", "")
+            if "not found" in error.lower():
+                raise HTTPException(status_code=404, detail=error)
+            elif "already archived" in error.lower() or "not archived" in error.lower():
+                raise HTTPException(status_code=409, detail=error)
+            else:
+                raise HTTPException(status_code=500, detail=result)
+
+        action = "archived" if request.archived else "unarchived"
+        logfire.info(f"Task {action} successfully | task_id={task_id}")
+        return {"message": result.get("message", f"Task {action} successfully")}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logfire.error(f"Failed to archive/unarchive task | error={str(e)} | task_id={task_id}")
+        raise HTTPException(status_code=500, detail={"error": str(e)})
+
+
+@router.post("/tasks/bulk-archive")
+async def bulk_archive_tasks(request: BulkArchiveTasksRequest):
+    """Bulk archive tasks by IDs, project, status filter, or age."""
+    try:
+        task_service = TaskService()
+        success, result = task_service.bulk_archive_tasks(
+            task_ids=request.task_ids,
+            project_id=request.project_id,
+            status_filter=request.status_filter,
+            older_than_days=request.older_than_days,
+            archived_by="api",
+            archived_reason=request.archived_reason,
+        )
+
+        if not success:
+            raise HTTPException(status_code=500, detail=result)
+
+        logfire.info(f"Bulk archive completed | archived_count={result.get('archived_count', 0)}")
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logfire.error(f"Failed to bulk archive tasks | error={str(e)}")
         raise HTTPException(status_code=500, detail={"error": str(e)})
 
 

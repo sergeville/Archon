@@ -165,6 +165,7 @@ def register_pattern_tools(mcp: FastMCP):
         Actions:
         - "harvest": Save a new learned pattern to shared memory
         - "record_observation": Record that a pattern was applied and rate its effectiveness
+        - "extract_patterns": Use AI to extract reusable patterns from a session's events
 
         Args (harvest):
             pattern_type: Type of pattern (success, failure, technical, process)
@@ -182,8 +183,11 @@ def register_pattern_tools(mcp: FastMCP):
             success_rating: Effectiveness rating 1-5 (5 = very effective)
             feedback: Notes about how it went
 
+        Args (extract_patterns):
+            session_id: UUID of the session to analyze
+
         Returns:
-            JSON with created pattern or observation
+            JSON with created pattern, observation, or extracted patterns
         """
         try:
             api_url = get_api_url()
@@ -238,10 +242,26 @@ def register_pattern_tools(mcp: FastMCP):
                     else:
                         return MCPErrorFormatter.from_http_error(response, "record observation")
 
+                elif action == "extract_patterns":
+                    if not session_id:
+                        return json.dumps({
+                            "success": False,
+                            "error": "extract_patterns requires: session_id"
+                        })
+                    response = await client.post(
+                        urljoin(api_url, f"/api/patterns/extract/{session_id}")
+                    )
+                    if response.status_code == 200:
+                        result = response.json()
+                        patterns = [optimize_pattern_response(p) for p in result.get("patterns", [])]
+                        return json.dumps({"success": True, "patterns": patterns, "count": len(patterns)})
+                    else:
+                        return MCPErrorFormatter.from_http_error(response, "extract patterns")
+
                 else:
                     return json.dumps({
                         "success": False,
-                        "error": f"Unknown action '{action}'. Valid actions: harvest, record_observation"
+                        "error": f"Unknown action '{action}'. Valid actions: harvest, record_observation, extract_patterns"
                     })
 
         except Exception as e:

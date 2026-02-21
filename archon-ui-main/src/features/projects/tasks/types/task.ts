@@ -62,6 +62,7 @@ export interface Task {
   archived?: boolean;
   archived_at?: string;
   archived_by?: string;
+  archived_reason?: string;
 
   // Priority field (required database field)
   priority: TaskPriority;

@@ -1,4 +1,4 @@
-import { LayoutGrid, Plus, Table } from "lucide-react";
+import { Archive, LayoutGrid, Plus, Table } from "lucide-react";
 import { useCallback, useState } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -8,7 +8,7 @@ import { Button, Card } from "../../ui/primitives";
 import { cn, glassmorphism } from "../../ui/primitives/styles";
 import { SendToAgentModal } from "../components/SendToAgentModal";
 import { TaskEditModal } from "./components/TaskEditModal";
-import { useDeleteTask, useProjectTasks, useUpdateTask } from "./hooks";
+import { useArchiveTask, useDeleteTask, useProjectTasks, useUnarchiveTask, useUpdateTask } from "./hooks";
 import type { Task } from "./types";
 import { getReorderTaskOrder, ORDER_INCREMENT, validateTaskOrder } from "./utils";
 import { BoardView, TableView } from "./views";
@@ -25,6 +25,7 @@ export const TasksTab = ({ projectId, projectName = "" }: TasksTabProps) => {
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [sendToAgentTask, setSendToAgentTask] = useState<Task | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   const { agentWorkOrdersEnabled } = useSettings();
 

@@ -60,12 +60,13 @@ def register_task_tools(mcp: FastMCP):
         filter_value: str | None = None,
         project_id: str | None = None,
         include_closed: bool = True,
+        include_archived: bool = False,
         page: int = 1,
         per_page: int = DEFAULT_PAGE_SIZE,  # Use optimized default
     ) -> str:
         """
         Find and search tasks (consolidated: list + search + get).
-        
+
         Args:
             query: Keyword search in title, description, feature (optional)
             task_id: Get specific task by ID (returns full details)
@@ -73,12 +74,13 @@ def register_task_tools(mcp: FastMCP):
             filter_value: Filter value (e.g., "todo", "doing", "review", "done")
             project_id: Project UUID (optional, for additional filtering)
             include_closed: Include done tasks in results
+            include_archived: Include archived tasks in results (default: False)
             page: Page number for pagination
             per_page: Items per page (default: 10)
-        
+
         Returns:
             JSON array of tasks or single task (optimized payloads for lists)
-        
+
         Examples:
             find_tasks() # All tasks
             find_tasks(query="auth") # Search for "auth"
@@ -122,12 +124,13 @@ def register_task_tools(mcp: FastMCP):
             if filter_by == "project" and filter_value:
                 # Use project-specific endpoint for project filtering
                 url = urljoin(api_url, f"/api/projects/{filter_value}/tasks")
-                params["include_archived"] = False  # For backward compatibility
+                params["include_archived"] = include_archived
             elif filter_by == "status" and filter_value:
                 # Use generic tasks endpoint for status filtering
                 url = urljoin(api_url, "/api/tasks")
                 params["status"] = filter_value
                 params["include_closed"] = include_closed
+                params["include_archived"] = include_archived
                 if project_id:
                     params["project_id"] = project_id
             elif filter_by == "assignee" and filter_value:
@@ -135,6 +138,7 @@ def register_task_tools(mcp: FastMCP):
                 url = urljoin(api_url, "/api/tasks")
                 params["assignee"] = filter_value
                 params["include_closed"] = include_closed
+                params["include_archived"] = include_archived
                 if project_id:
                     params["project_id"] = project_id
             elif project_id:
@@ -142,10 +146,12 @@ def register_task_tools(mcp: FastMCP):
                 url = urljoin(api_url, "/api/tasks")
                 params["project_id"] = project_id
                 params["include_closed"] = include_closed
+                params["include_archived"] = include_archived
             else:
                 # No specific filters - get all tasks
                 url = urljoin(api_url, "/api/tasks")
                 params["include_closed"] = include_closed
+                params["include_archived"] = include_archived
 
             async with httpx.AsyncClient(timeout=timeout) as client:
                 response = await client.get(url, params=params)
@@ -199,7 +205,7 @@ def register_task_tools(mcp: FastMCP):
     @mcp.tool()
     async def manage_task(
         ctx: Context,
-        action: str,  # "create" | "update" | "delete"
+        action: str,  # "create" | "update" | "delete" | "archive" | "unarchive"
         task_id: str | None = None,
         project_id: str | None = None,
         title: str | None = None,
@@ -207,10 +213,11 @@ def register_task_tools(mcp: FastMCP):
         status: str | None = None,
         assignee: str | None = None,
         task_order: int | None = None,
-        feature: str | None = None
+        feature: str | None = None,
+        archived_reason: str | None = None,
     ) -> str:
         """
-        Manage tasks (consolidated: create/update/delete).
+        Manage tasks (consolidated: create/update/delete/archive/unarchive).
 
         TASK GRANULARITY GUIDANCE:
         - For feature-specific projects: Create detailed implementation tasks (setup, implement, test, document)
@@ -219,8 +226,8 @@ def register_task_tools(mcp: FastMCP):
         - Each task should represent 30 minutes to 4 hours of work
 
         Args:
-            action: "create" | "update" | "delete"
-            task_id: Task UUID for update/delete
+            action: "create" | "update" | "delete" | "archive" | "unarchive"
+            task_id: Task UUID for update/delete/archive/unarchive
             project_id: Project UUID for create
             title: Task title text
             description: Detailed task description with clear completion criteria
@@ -232,12 +239,15 @@ def register_task_tools(mcp: FastMCP):
                      Default: "User"
             task_order: Priority 0-100 (higher = more priority)
             feature: Feature label for grouping
+            archived_reason: Optional reason for archiving (used with archive action)
 
         Examples:
           manage_task("create", project_id="p-1", title="Research existing patterns", description="Study codebase for similar implementations")
           manage_task("create", project_id="p-1", title="Write unit tests", description="Cover all edge cases with 80% coverage")
           manage_task("update", task_id="t-1", status="doing", assignee="User")
           manage_task("delete", task_id="t-1")
+          manage_task("archive", task_id="t-1", archived_reason="No longer needed")
+          manage_task("unarchive", task_id="t-1")
 
         Returns: {success: bool, task?: object, message: string}
         """
@@ -357,11 +367,55 @@ def register_task_tools(mcp: FastMCP):
                     else:
                         return MCPErrorFormatter.from_http_error(response, "delete task")
 
+                elif action == "archive":
+                    if not task_id:
+                        return MCPErrorFormatter.format_error(
+                            "validation_error",
+                            "task_id required for archive",
+                            suggestion="Provide task_id to archive"
+                        )
+
+                    response = await client.patch(
+                        urljoin(api_url, f"/api/tasks/{task_id}/archive"),
+                        json={"archived": True, "archived_reason": description or archived_reason},
+                    )
+
+                    if response.status_code == 200:
+                        result = response.json()
+                        return json.dumps({
+                            "success": True,
+                            "message": result.get("message", "Task archived successfully"),
+                        })
+                    else:
+                        return MCPErrorFormatter.from_http_error(response, "archive task")
+
+                elif action == "unarchive":
+                    if not task_id:
+                        return MCPErrorFormatter.format_error(
+                            "validation_error",
+                            "task_id required for unarchive",
+                            suggestion="Provide task_id to unarchive"
+                        )
+
+                    response = await client.patch(
+                        urljoin(api_url, f"/api/tasks/{task_id}/archive"),
+                        json={"archived": False},
+                    )
+
+                    if response.status_code == 200:
+                        result = response.json()
+                        return json.dumps({
+                            "success": True,
+                            "message": result.get("message", "Task unarchived successfully"),
+                        })
+                    else:
+                        return MCPErrorFormatter.from_http_error(response, "unarchive task")
+
                 else:
                     return MCPErrorFormatter.format_error(
                         "invalid_action",
                         f"Unknown action: {action}",
-                        suggestion="Use 'create', 'update', or 'delete'"
+                        suggestion="Use 'create', 'update', 'delete', 'archive', or 'unarchive'"
                     )
 
         except httpx.RequestError as e:

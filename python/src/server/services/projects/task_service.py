@@ -6,7 +6,7 @@ shared between MCP tools and FastAPI endpoints.
 """
 
 # Removed direct logging import - using unified config
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from src.server.utils import get_supabase_client
@@ -504,7 +504,7 @@ class TaskService:
             return False, {"error": f"Error updating task: {str(e)}"}
 
     async def archive_task(
-        self, task_id: str, archived_by: str = "mcp"
+        self, task_id: str, archived_by: str = "mcp", archived_reason: str | None = None
     ) -> tuple[bool, dict[str, Any]]:
         """
         Archive a task and all its subtasks (soft delete).
@@ -529,6 +529,7 @@ class TaskService:
                 "archived": True,
                 "archived_at": datetime.now().isoformat(),
                 "archived_by": archived_by,
+                "archived_reason": archived_reason,
                 "updated_at": datetime.now().isoformat(),
             }
 
@@ -549,6 +550,113 @@ class TaskService:
         except Exception as e:
             logger.error(f"Error archiving task: {e}")
             return False, {"error": f"Error archiving task: {str(e)}"}
+
+    async def unarchive_task(
+        self, task_id: str
+    ) -> tuple[bool, dict[str, Any]]:
+        """
+        Unarchive a task (restore from soft delete).
+
+        Returns:
+            Tuple of (success, result_dict)
+        """
+        try:
+            task_response = (
+                self.supabase_client.table("archon_tasks").select("*").eq("id", task_id).execute()
+            )
+            if not task_response.data:
+                return False, {"error": f"Task with ID {task_id} not found"}
+
+            task = task_response.data[0]
+            if not task.get("archived"):
+                return False, {"error": f"Task with ID {task_id} is not archived"}
+
+            response = (
+                self.supabase_client.table("archon_tasks")
+                .update({
+                    "archived": False,
+                    "archived_at": None,
+                    "archived_by": None,
+                    "archived_reason": None,
+                    "updated_at": datetime.now().isoformat(),
+                })
+                .eq("id", task_id)
+                .execute()
+            )
+
+            if response.data:
+                return True, {"task_id": task_id, "message": "Task unarchived successfully"}
+            else:
+                return False, {"error": f"Failed to unarchive task {task_id}"}
+
+        except Exception as e:
+            logger.error(f"Error unarchiving task: {e}")
+            return False, {"error": f"Error unarchiving task: {str(e)}"}
+
+    def bulk_archive_tasks(
+        self,
+        task_ids: list[str] | None = None,
+        project_id: str | None = None,
+        status_filter: list[str] | None = None,
+        older_than_days: int | None = None,
+        archived_by: str = "api",
+        archived_reason: str | None = None,
+    ) -> tuple[bool, dict[str, Any]]:
+        """
+        Bulk archive tasks by IDs, project, status, or age.
+
+        Returns:
+            Tuple of (success, result_dict) with archived_count
+        """
+        try:
+            now = datetime.now()
+            archive_data = {
+                "archived": True,
+                "archived_at": now.isoformat(),
+                "archived_by": archived_by,
+                "archived_reason": archived_reason,
+                "updated_at": now.isoformat(),
+            }
+
+            if task_ids:
+                # Archive specific task IDs
+                response = (
+                    self.supabase_client.table("archon_tasks")
+                    .update(archive_data)
+                    .in_("id", task_ids)
+                    .or_("archived.is.null,archived.is.false")
+                    .execute()
+                )
+                archived_count = len(response.data) if response.data else 0
+            else:
+                # Build filter query
+                query = (
+                    self.supabase_client.table("archon_tasks")
+                    .update(archive_data)
+                    .or_("archived.is.null,archived.is.false")
+                )
+
+                if project_id:
+                    query = query.eq("project_id", project_id)
+
+                if status_filter:
+                    query = query.in_("status", status_filter)
+
+                if older_than_days is not None:
+                    cutoff = (now - timedelta(days=older_than_days)).isoformat()
+                    query = query.lt("updated_at", cutoff)
+
+                response = query.execute()
+                archived_count = len(response.data) if response.data else 0
+
+            return True, {
+                "archived_count": archived_count,
+                "message": f"Archived {archived_count} task(s) successfully",
+            }
+
+        except Exception as e:
+            logger.error(f"Error bulk archiving tasks: {e}")
+            return False, {"error": f"Error bulk archiving tasks: {str(e)}"}
 
     def get_all_project_task_counts(self) -> tuple[bool, dict[str, dict[str, int]]]:
         """

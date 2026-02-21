@@ -52,9 +52,12 @@ export const taskService = {
   /**
    * Get all tasks for a project
    */
-  async getTasksByProject(projectId: string): Promise<Task[]> {
+  async getTasksByProject(projectId: string, includeArchived = false): Promise<Task[]> {
     try {
-      const tasks = await callAPIWithETag<Task[]>(`/api/projects/${projectId}/tasks`);
+      const url = includeArchived
+        ? `/api/projects/${projectId}/tasks?include_archived=true`
+        : `/api/projects/${projectId}/tasks`;
+      const tasks = await callAPIWithETag<Task[]>(url);
 
       // Return tasks as-is; UI uses DB status values (todo/doing/review/done)
       return tasks;
@@ -188,6 +191,36 @@ export const taskService = {
       return task;
     } catch (error) {
       console.error(`Failed to update task order for ${taskId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Archive a task (soft-hide without deleting)
+   */
+  async archiveTask(taskId: string, reason?: string): Promise<void> {
+    try {
+      await callAPIWithETag<{ message: string }>(`/api/tasks/${taskId}/archive`, {
+        method: "PATCH",
+        body: JSON.stringify({ archived: true, archived_reason: reason }),
+      });
+    } catch (error) {
+      console.error(`Failed to archive task ${taskId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Unarchive a task (restore from soft-hide)
+   */
+  async unarchiveTask(taskId: string): Promise<void> {
+    try {
+      await callAPIWithETag<{ message: string }>(`/api/tasks/${taskId}/archive`, {
+        method: "PATCH",
+        body: JSON.stringify({ archived: false }),
+      });
+    } catch (error) {
+      console.error(`Failed to unarchive task ${taskId}:`, error);
       throw error;
     }
   },
