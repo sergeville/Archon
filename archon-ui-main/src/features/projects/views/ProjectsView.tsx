@@ -77,8 +77,10 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
 
   // Sort and filter projects
   const sortedProjects = useMemo(() => {
-    // Filter by search query
+    // Filter by search query, excluding archived projects
     const filtered = (projects as Project[]).filter((project) => {
+      if (project.archived) return false;
+
       const query = searchQuery.trim();
       if (!query) return true;
 
@@ -160,6 +162,29 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
     };
   }, [selectedProject]);
 
+  // Handle archive project
+  const handleArchiveProject = useCallback(() => {
+    if (!selectedProject) return;
+    updateProjectMutation.mutate(
+      { projectId: selectedProject.id, updates: { archived: true } },
+      {
+        onSuccess: () => {
+          const remaining = (projects as Project[]).filter(
+            (p) => p.id !== selectedProject.id && !p.archived,
+          );
+          if (remaining.length > 0) {
+            handleProjectSelect(remaining[0]);
+          } else {
+            setSelectedProject(null);
+            navigate("/projects", { replace: true });
+          }
+        },
+      },
+    );
+  }, [selectedProject, updateProjectMutation, projects, navigate, handleProjectSelect]);
+
+  const canArchiveProject = !!selectedProject && !selectedProject.archived;
+
   // Handle pin toggle
   const handlePinProject = async (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
@@ -226,6 +251,8 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
     >
       <ProjectHeader
         onNewProject={() => setIsNewProjectModalOpen(true)}
+        onArchiveProject={handleArchiveProject}
+        canArchiveProject={canArchiveProject}
         layoutMode={layoutMode}
         onLayoutModeChange={setLayoutMode}
         searchQuery={searchQuery}

@@ -17,6 +17,7 @@ export const CreateProjectSchema = z.object({
   technical_sources: z.array(z.string()).optional(),
   business_sources: z.array(z.string()).optional(),
   pinned: z.boolean().optional(),
+  archived: z.boolean().optional(),
 });
 
 export const UpdateProjectSchema = CreateProjectSchema.partial();

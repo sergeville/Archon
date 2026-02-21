@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { LayoutGrid, List, ListTodo, Plus, Search, X } from "lucide-react";
+import { Archive, LayoutGrid, List, ListTodo, Plus, Search, X } from "lucide-react";
 import type React from "react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
@@ -9,6 +9,8 @@ import { cn } from "../../ui/primitives/styles";
 
 interface ProjectHeaderProps {
   onNewProject: () => void;
+  onArchiveProject?: () => void;
+  canArchiveProject?: boolean;
   layoutMode?: "horizontal" | "sidebar";
   onLayoutModeChange?: (mode: "horizontal" | "sidebar") => void;
   rightContent?: ReactNode;
@@ -36,6 +38,8 @@ const itemVariants = {
 
 export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
   onNewProject,
+  onArchiveProject,
+  canArchiveProject = false,
   layoutMode,
   onLayoutModeChange,
   rightContent,
@@ -120,6 +124,25 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
             <ListTodo className="w-4 h-4" aria-hidden="true" />
           </Link>
         </div>
+        {onArchiveProject && (
+          <div className="p-1 bg-black/30 dark:bg-black/50 rounded-lg border border-white/10">
+            <button
+              type="button"
+              onClick={onArchiveProject}
+              disabled={!canArchiveProject}
+              className={cn(
+                "inline-flex items-center justify-center px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                canArchiveProject
+                  ? "text-amber-400 hover:bg-white/10 hover:text-amber-300"
+                  : "text-gray-600 cursor-not-allowed",
+              )}
+              aria-label="Archive project"
+              title={canArchiveProject ? "Archive project" : "Select a project to archive"}
+            >
+              <Archive className="w-4 h-4" aria-hidden="true" />
+            </button>
+          </div>
+        )}
         <Button onClick={onNewProject} variant="cyan" className="shadow-lg shadow-cyan-500/20">
           <Plus className="w-4 h-4 mr-2" />
           New Project

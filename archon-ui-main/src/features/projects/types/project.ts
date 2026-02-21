@@ -59,6 +59,7 @@ export interface Project {
   progress?: number;
   updated?: string; // Human-readable format
   pinned: boolean;
+  archived?: boolean;
 
   // Creation progress tracking for inline display
   creationProgress?: ProjectCreationProgress;
@@ -88,6 +89,7 @@ export interface UpdateProjectRequest {
   technical_sources?: string[];
   business_sources?: string[];
   pinned?: boolean;
+  archived?: boolean;
 }
 
 // Utility types
