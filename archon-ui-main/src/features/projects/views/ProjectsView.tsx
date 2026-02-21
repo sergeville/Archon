@@ -269,8 +269,6 @@ export function ProjectsView({ className = "", "data-id": dataId }: ProjectsView
               isLoading={isLoadingProjects}
               error={projectsError as Error | null}
               onProjectSelect={handleProjectSelect}
-              onPinProject={handlePinProject}
-              onDeleteProject={handleDeleteProject}
               onRetry={() => queryClient.invalidateQueries({ queryKey: projectKeys.lists() })}
             />
           )}

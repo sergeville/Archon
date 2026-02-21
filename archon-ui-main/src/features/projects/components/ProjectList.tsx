@@ -12,8 +12,6 @@ interface ProjectListProps {
   isLoading: boolean;
   error: Error | null;
   onProjectSelect: (project: Project) => void;
-  onPinProject: (e: React.MouseEvent, projectId: string) => void;
-  onDeleteProject: (e: React.MouseEvent, projectId: string, title: string) => void;
   onRetry: () => void;
 }
 
@@ -33,8 +31,6 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   isLoading,
   error,
   onProjectSelect,
-  onPinProject,
-  onDeleteProject,
   onRetry,
 }) => {
   // Sort projects - pinned first, then by creation date (newest first)
@@ -107,8 +103,6 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 isSelected={selectedProject?.id === project.id}
                 taskCounts={taskCounts[project.id] || { todo: 0, doing: 0, review: 0, done: 0 }}
                 onSelect={onProjectSelect}
-                onPin={onPinProject}
-                onDelete={onDeleteProject}
               />
             </li>
           ))}

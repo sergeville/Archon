@@ -5,7 +5,6 @@ import { OptimisticIndicator } from "../../ui/primitives/OptimisticIndicator";
 import { SelectableCard } from "../../ui/primitives/selectable-card";
 import { cn } from "../../ui/primitives/styles";
 import type { Project } from "../types";
-import { ProjectCardActions } from "./ProjectCardActions";
 
 interface ProjectCardProps {
   project: Project;
@@ -17,8 +16,6 @@ interface ProjectCardProps {
     done: number;
   };
   onSelect: (project: Project) => void;
-  onPin: (e: React.MouseEvent, projectId: string) => void;
-  onDelete: (e: React.MouseEvent, projectId: string, title: string) => void;
 }
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({
@@ -26,8 +23,6 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   isSelected,
   taskCounts,
   onSelect,
-  onPin,
-  onDelete,
 }) => {
   // Check if project is optimistic
   const optimistic = isOptimistic(project);
@@ -226,32 +221,12 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         </div>
       </div>
 
-      {/* Bottom bar with pinned indicator and actions - separate section */}
-      <div className="flex items-center justify-between px-3 py-2 mt-auto border-t border-gray-200/30 dark:border-gray-700/20">
-        {/* Pinned indicator badge */}
-        {project.pinned ? (
-          <div className="px-2 py-0.5 bg-purple-500 dark:bg-purple-600 text-white text-[10px] font-bold rounded-full shadow-lg shadow-purple-500/30">
-            DEFAULT
-          </div>
-        ) : (
-          <div></div>
-        )}
-
-        {/* Action Buttons - fixed to bottom right */}
-        <ProjectCardActions
-          projectId={project.id}
-          projectTitle={project.title}
-          isPinned={project.pinned}
-          onPin={(e) => {
-            e.stopPropagation();
-            onPin(e, project.id);
-          }}
-          onDelete={(e) => {
-            e.stopPropagation();
-            onDelete(e, project.id, project.title);
-          }}
-        />
-      </div>
+      {/* Pinned indicator badge */}
+      {project.pinned && (
+        <div className="absolute top-2 right-2 px-2 py-0.5 bg-purple-500 dark:bg-purple-600 text-white text-[10px] font-bold rounded-full shadow-lg shadow-purple-500/30">
+          DEFAULT
+        </div>
+      )}
     </SelectableCard>
   );
 };
